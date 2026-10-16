@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import fc from 'fast-check'
 import { createFrameAnalyzer, rmsDb } from './frame-analyzer'
 import { analyzeSignal } from './offline'
 import { centsBetween, midiToHz } from '../music/pitch'
@@ -44,6 +45,36 @@ describe('frame analyzer', () => {
         expect(Math.abs(centsBetween(f.hz!, hz))).toBeLessThan(1)
       }
     }
+  })
+
+  test.each([
+    [[0, 1, 0.2, 0.4, 0.1]],
+    [[0.1, 1, 0.1, 0.5]],
+    [[0, 1, 0.1, 0.1]],
+  ])('no octave-up error when the fundamental is missing (spectrum %j)', (harmonics) => {
+    for (let midi = 55; midi <= 64; midi++) {
+      const hz = midiToHz(midi)
+      for (const f of steadyFrames(tone({ hz, ms: 500, harmonics }))) {
+        expect(Math.abs(centsBetween(f.hz!, hz))).toBeLessThan(1)
+      }
+    }
+  })
+
+  test('PROPERTY: a tone whose fundamental is present is never moved an octave down', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 55, max: 83 }),
+        fc.integer({ min: -45, max: 45 }),
+        fc.array(fc.double({ min: 0, max: 1, noNaN: true }), { minLength: 0, maxLength: 7 }),
+        fc.constantFrom(44100, 48000),
+        (midi, cents, upper, sr) => {
+          const hz = midiToHz(midi) * 2 ** (cents / 1200)
+          const frames = analyzeSignal(tone({ hz, ms: 200, harmonics: [1, ...upper] }, sr), sr).slice(3, -3)
+          for (const f of frames) expect(Math.abs(centsBetween(f.hz!, hz))).toBeLessThan(5)
+        },
+      ),
+      { numRuns: 60 },
+    )
   })
 
   test('a detuned tone is measured as detuned', () => {

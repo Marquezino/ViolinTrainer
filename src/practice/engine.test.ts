@@ -111,6 +111,13 @@ describe('PracticeEngine with synthetic performances', () => {
     expect(s.session.targets[0]).toMatchObject({ color: 'green', redAttempts: 1 })
   })
 
+  test('PRECISION: open G3 with a missing fundamental is not accepted as G4', () => {
+    const g3 = tone({ hz: midiToHz(55), ms: 500, harmonics: [0, 1, 0.2, 0.4, 0.1] })
+    const s = run(exercise('G |]'), g3)
+    expect(s.session.cursor).toBe(0)
+    expect(s.lastRejection).toMatchObject({ kind: 'wrongNote', playedName: 'G3' })
+  })
+
   test('28 cents flat is yellow', () => {
     const s = run(exercise('A |]'), note(69, 400, -28))
     expect(s.session.targets[0].color).toBe('yellow')
