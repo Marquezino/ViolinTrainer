@@ -70,10 +70,14 @@ function PracticeStatus(props: { snapshot: EngineSnapshot; config: SessionConfig
     case 'tooNoisy':
       return (
         <section className="panel panel-error" role="alert">
-          <p>
-            The room is too noisy for reliable judging ({Math.round(snapshot.noiseFloorDb ?? 0)} dB). Close windows
-            or move away from the noise, then try again.
-          </p>
+          {snapshot.noiseProblem === 'playing' ? (
+            <p>I heard playing during the room check. Stay quiet until the check is over, then start playing.</p>
+          ) : (
+            <p>
+              The room is too noisy for reliable judging ({Math.round(snapshot.noiseFloorDb ?? 0)} dB). Close
+              windows or move away from the noise, then try again.
+            </p>
+          )}
           <button type="button" className="primary" onClick={onRestart}>
             Try again
           </button>

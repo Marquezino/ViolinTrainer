@@ -1,5 +1,5 @@
 import type { TimedFrame } from '../analysis/frame-analyzer'
-import { NOISE_CHECK_MS, isTooNoisy, noiseFloorDb } from '../analysis/level'
+import { MAX_PITCHED_FRACTION, NOISE_CHECK_MS, isPitched, isTooNoisy, noiseFloorDb } from '../analysis/level'
 import { DEFAULT_TRACKER_CONFIG, NoteTracker, isVoiced, type TrackerConfig } from '../analysis/note-tracker'
 import { PitchSmoother } from '../analysis/pitch-smoother'
 import { centsBetween, hzToMidiFloat, midiToHz, noteName, type Judgement } from '../music/pitch'
@@ -7,6 +7,9 @@ import { scoreRun, type RunResult } from './scoring'
 import { onNote, onTick, startSession, type SessionConfig, type WaitSessionState } from './wait-session'
 
 export type EnginePhase = 'measuringNoise' | 'tooNoisy' | 'practicing' | 'finished'
+
+/** Why practice was blocked: a loud room, or someone playing during the room check. */
+export type NoiseProblem = 'loud' | 'playing'
 
 export interface NeedleReading {
   /** Deviation of the current sound from the current target. */
@@ -26,6 +29,7 @@ export interface EngineSnapshot {
   /** Fraction of the microphone check done, 0..1. */
   noiseCheckProgress: number
   noiseFloorDb: number | null
+  noiseProblem: NoiseProblem | null
   session: WaitSessionState
   needle: NeedleReading | null
   lastRejection: Rejection | null
@@ -37,6 +41,7 @@ export class PracticeEngine {
   private readonly sessionConfig: SessionConfig
   private readonly smoother = new PitchSmoother(100)
   private readonly levels: number[] = []
+  private pitchedFrames = 0
   private firstFrameMs: number | null = null
   private tracker: NoteTracker | null = null
   private trackerConfig: TrackerConfig | null = null
@@ -48,6 +53,7 @@ export class PracticeEngine {
       phase: 'measuringNoise',
       noiseCheckProgress: 0,
       noiseFloorDb: null,
+      noiseProblem: null,
       session,
       needle: null,
       lastRejection: null,
@@ -68,14 +74,17 @@ export class PracticeEngine {
   private measureNoise(frame: TimedFrame): void {
     this.firstFrameMs ??= frame.timeMs
     this.levels.push(frame.rmsDb)
+    if (isPitched(frame)) this.pitchedFrames++
     const elapsed = frame.timeMs - this.firstFrameMs
     if (elapsed < NOISE_CHECK_MS) {
       this.current = { ...this.current, noiseCheckProgress: elapsed / NOISE_CHECK_MS }
       return
     }
     const floor = noiseFloorDb(this.levels)
-    if (isTooNoisy(floor)) {
-      this.current = { ...this.current, phase: 'tooNoisy', noiseCheckProgress: 1, noiseFloorDb: floor }
+    const playing = this.pitchedFrames > MAX_PITCHED_FRACTION * this.levels.length
+    if (playing || isTooNoisy(floor)) {
+      const noiseProblem: NoiseProblem = playing ? 'playing' : 'loud'
+      this.current = { ...this.current, phase: 'tooNoisy', noiseCheckProgress: 1, noiseFloorDb: floor, noiseProblem }
       return
     }
     this.trackerConfig = { ...DEFAULT_TRACKER_CONFIG, noiseFloorDb: floor }

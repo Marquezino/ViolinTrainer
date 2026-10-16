@@ -107,6 +107,17 @@ describe('PracticeEngine with synthetic performances', () => {
     expect(s.phase).toBe('tooNoisy')
   })
 
+  test('playing softly during the room check also blocks practice (the floor would hide soft notes)', () => {
+    const soft = tone({ hz: 440, ms: 2100, harmonics: VIOLIN_HARMONICS, amplitude: 0.002 })
+    const s = run(exercise('A |]'), note(69, 400, 0), soft)
+    expect(s.phase).toBe('tooNoisy')
+    expect(s.noiseProblem).toBe('playing')
+  })
+
+  test('a loud unpitched room reports loudness, not playing', () => {
+    expect(run(exercise('A |]'), note(69), noise(2100, 0.05)).noiseProblem).toBe('loud')
+  })
+
   test('works with a 44.1 kHz microphone', () => {
     const sr = 44100
     const engine = new PracticeEngine(startSession(exercise('D A |]'), config, 0))

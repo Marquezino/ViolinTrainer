@@ -13,3 +13,12 @@ export function noiseFloorDb(levelsDb: readonly number[]): number {
 export function isTooNoisy(floorDb: number): boolean {
   return floorDb > MAX_NOISE_FLOOR_DB
 }
+
+/** More pitched frames than this during the room check means someone was playing. */
+export const MAX_PITCHED_FRACTION = 0.1
+const PITCHED_CLARITY = 0.9
+
+/** A frame with a clear pitch, however quiet. */
+export function isPitched(frame: { hz: number | null; clarity: number }): boolean {
+  return frame.hz !== null && frame.clarity >= PITCHED_CLARITY
+}
