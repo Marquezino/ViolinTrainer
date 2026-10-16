@@ -86,16 +86,20 @@ describe('PracticeEngine with synthetic performances', () => {
         (startCents, endAbs, endSharp, centsPerSecond, offsetMs) => {
           const endCents = endSharp ? endAbs : -endAbs
           const glideMs = Math.max(50, (Math.abs(endCents - startCents) / centsPerSecond) * 1000)
+          // One continuous tone, as a finger slides. Two joined tones would put a jump in the
+          // waveform at the join that a real slide does not have.
           const performance = concat(
             silence(offsetMs),
-            tone({ hz: at(startCents), endHz: at(endCents), ms: glideMs, harmonics: VIOLIN_HARMONICS, releaseMs: 0 }),
-            tone({ hz: at(endCents), ms: 500, harmonics: VIOLIN_HARMONICS, attackMs: 0 }),
+            tone({ hz: at(startCents), endHz: at(endCents), slideMs: glideMs, ms: glideMs + 500, harmonics: VIOLIN_HARMONICS }),
           )
           expect(run(exercise('A |]'), performance).session.cursor).toBe(0)
         },
       ),
       // The examples were counterexamples found while tuning the tracker.
-      { numRuns: 30, examples: [[0, 40, false, 150, 0], [22, 40, false, 150, 0]] },
+      {
+        numRuns: 30,
+        examples: [[0, 40, false, 150, 0], [22, 40, false, 150, 0], [0, 40, false, 76, 0], [51, 40, false, 72, 5]],
+      },
     )
   })
 

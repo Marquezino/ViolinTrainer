@@ -14,6 +14,8 @@ export interface ToneSpec {
   harmonics?: number[]
   /** Pitch at the end of the tone; the pitch moves linearly in cents (a slide). */
   endHz?: number
+  /** How long the slide to endHz takes; the pitch then holds there. Defaults to the whole tone. */
+  slideMs?: number
   vibrato?: { rateHz: number; widthCents: number }
   attackMs?: number
   releaseMs?: number
@@ -28,10 +30,11 @@ export function tone(spec: ToneSpec, sampleRate = SAMPLE_RATE): Float32Array {
   const attack = Math.round(((spec.attackMs ?? 10) / 1000) * sampleRate)
   const release = Math.round(((spec.releaseMs ?? 10) / 1000) * sampleRate)
   const slideCents = spec.endHz ? 1200 * Math.log2(spec.endHz / spec.hz) : 0
+  const slideSamples = spec.slideMs === undefined ? n : Math.round((spec.slideMs / 1000) * sampleRate)
   let phase = 0
   for (let i = 0; i < n; i++) {
     const t = i / sampleRate
-    let cents = slideCents * (i / n)
+    let cents = slideCents * Math.min(1, i / slideSamples)
     if (spec.vibrato) cents += spec.vibrato.widthCents * Math.sin(2 * Math.PI * spec.vibrato.rateHz * t)
     const f = spec.hz * 2 ** (cents / 1200)
     phase += (2 * Math.PI * f) / sampleRate

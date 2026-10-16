@@ -244,7 +244,8 @@ Status after the plan 1 prototype (synthetic audio and headless Chrome only; rea
 6. **Known limitations:**
    - Wide vibrato may take several cycles to be accepted. A ±12-cent vibrato is accepted at most once, judged within its width.
    - Slides slower than about 50 cents per second that pass through the target are credited when they pass. In a 120 ms window they cannot be told apart from a held note.
-   - Both are acceptable for beginners in v1.
+   - A brief disturbance (about 30 ms) right where a slow slide (under about 80 cents per second) stops can hide the last of the movement. The note is then judged a few cents short of where it settles. Found with synthetic tones joined mid-slide; real recordings will show whether bow noise does the same.
+   - These are acceptable for beginners in v1.
 
 ## 13. After v1
 
