@@ -1,6 +1,7 @@
 import { FRAME_SIZE, FrameCollector, HOP_SIZE } from './frame-collector'
 import { createFrameAnalyzer, type TimedFrame } from './frame-analyzer'
 import { HIGH_PASS_HZ, HighPassFilter } from './highpass'
+import { NoteTracker, type NoteEvent, type TrackerConfig } from './note-tracker'
 
 /** Runs a whole recording through the same steps as the live microphone path. */
 export function analyzeSignal(samples: Float32Array, sampleRate: number): TimedFrame[] {
@@ -12,4 +13,15 @@ export function analyzeSignal(samples: Float32Array, sampleRate: number): TimedF
   })
   collector.push(filtered)
   return frames
+}
+
+/** Feeds analyzed frames through a fresh note tracker. */
+export function trackNotes(frames: readonly TimedFrame[], config: TrackerConfig): NoteEvent[] {
+  const tracker = new NoteTracker(config)
+  const events: NoteEvent[] = []
+  for (const f of frames) {
+    const event = tracker.push(f, f.timeMs)
+    if (event) events.push(event)
+  }
+  return events
 }
