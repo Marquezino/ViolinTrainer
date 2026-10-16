@@ -88,11 +88,12 @@ Rule: every decision is made in pure functions (`score`, `music`, `analysis`, `p
 Initial parameter values. All of them are configuration constants, tuned against the recordings suite.
 
 - Frame size 2048 samples, hop 512 samples (about 10.7 ms at 48 kHz).
+- A frame's level is measured over its newest 512 samples (about 11 ms), so that short dips at bow changes are visible.
 - A frame is **voiced** when clarity ≥ 0.90 and its level is at least 12 dB above the noise floor measured by the microphone check.
 - A **note event** starts when voiced frames stay within ±25 cents of their running median for at least **120 ms**. Its pitch is the median over that window.
 - A new note event requires either:
   - a pitch move beyond the stability band (a new pitch, for example in a slur or when the player corrects intonation), or
-  - a **re-attack**: the level drops at least 6 dB below the sustained level, or the frames become unvoiced, for at least 30 ms, and then rises again.
+  - a **re-attack**: for at least 30 ms the level stays at least 6 dB below the note's peak, or the frames become unvoiced (both count toward the same dip), and then the level rises again.
 - Each note event is judged once by the session.
 
 ## 6. Wait-mode rules
@@ -129,12 +130,12 @@ A target accepted after at least one red attempt is shown with its color and a r
 
 ## 7. Fingering (first position, standard tuning G3 D4 A4 E5)
 
-| String | 0 | 1 (low / normal) | 2 (low / high) | 3 | 4 |
+| String | 0 | 1 (low / normal) | 2 (low / high) | 3 (normal / high) | 4 |
 |---|---|---|---|---|---|
-| G | G3 | A♭3 / A3 | B♭3 / B3 | C4 | D4 |
-| D | D4 | E♭4 / E4 | F4 / F♯4 | G4 | A4 |
-| A | A4 | B♭4 / B4 | C5 / C♯5 | D5 | E5 |
-| E | E5 | F5 / F♯5 | G5 / G♯5 | A5 | B5 |
+| G | G3 | A♭3 / A3 | B♭3 / B3 | C4 / C♯4 | D4 |
+| D | D4 | E♭4 / E4 | F4 / F♯4 | G4 / G♯4 | A4 |
+| A | A4 | B♭4 / B4 | C5 / C♯5 | D5 / D♯5 | E5 |
+| E | E5 | F5 / F♯5 | G5 / G♯5 | A5 / A♯5 | B5 |
 
 - Range: G3 to B5. Notes outside it trigger an editor warning and show no hint.
 - Default for notes reachable two ways (D4, A4, E5): the open string.
@@ -226,11 +227,14 @@ Best stars, unlocked exercises, streaks and the leaderboard are computed from th
 
 ## 12. Risks to check early
 
-1. Pitchy accuracy and octave errors on the G string (G3 to D4), where the fundamental is weak relative to the harmonics.
-2. Re-attack detection on repeated notes played by beginners, so that nobody gets stuck on a repeated note.
-3. abcjs support for the `!0!` finger decoration and for mapping rendered note elements back to targets.
-4. Microphone constraint handling and AudioWorklet behavior in Firefox.
-5. Road noise: whether the high-pass filter and the noise-floor gate are enough in the real room.
+Status after the plan 1 prototype (synthetic audio and headless Chrome only; real playing is still untested):
+
+1. Pitchy accuracy and octave errors on the G string (G3 to D4), where the fundamental is weak relative to the harmonics. *Synthetic tones: within 1 cent, no octave errors. Needs real recordings.*
+2. Re-attack detection on repeated notes played by beginners, so that nobody gets stuck on a repeated note. *Dips of 30 ms or more and about 7 dB or deeper are detected. Needs real recordings.*
+3. abcjs support for the `!0!` finger decoration and for mapping rendered note elements back to targets. *Resolved: both work.*
+4. Microphone constraint handling and AudioWorklet behavior in Firefox. *Chrome works through its fake microphone; Firefox still needs a manual check.*
+5. Road noise: whether the high-pass filter and the noise-floor gate are enough in the real room. *Rumble up to half the violin's level does not disturb the pitch. Louder rumble gives no pitch rather than a wrong one.*
+6. **Known limitation:** vibrato wider than about ±15 cents keeps a note from becoming stable, so the cursor does not advance. Acceptable for beginners in v1.
 
 ## 13. After v1
 
