@@ -1,6 +1,11 @@
 import abcjs from 'abcjs'
 import type { TuneObject } from 'abcjs'
-import { defaultFingering, fingeringWithFinger, type Finger } from '../music/fingering'
+import {
+  FIRST_POSITION_LOWEST_MIDI,
+  defaultFingering,
+  fingeringWithFinger,
+  type Finger,
+} from '../music/fingering'
 import { noteName } from '../music/pitch'
 import type { Exercise, ParseResult, Target } from './exercise'
 
@@ -9,11 +14,19 @@ interface AbcNote {
   el_type: 'note'
   startChar: number
   duration: number
-  pitches?: { name: string; endTie?: boolean }[]
+  pitches?: { name: string; pitch: number; endTie?: boolean }[]
   rest?: unknown
   decoration?: string[]
   gracenotes?: unknown[]
   midiPitches?: { pitch: number }[]
+}
+
+/** Bar line items; repeats are recognisable by their type or an ending number. */
+interface AbcBar {
+  el_type: 'bar'
+  startChar: number
+  type: string
+  startEnding?: string
 }
 
 const FINGER_DECORATIONS = new Set(['0', '1', '2', '3', '4'])
@@ -35,6 +48,8 @@ export function exerciseFromTune(tune: TuneObject, abc: string): ParseResult {
 
   const preferFlats = (tune.getKeySignature().accidentals ?? []).some((a) => a.acc === 'flat')
   const targets: Target[] = []
+  /** Staff position of the previous note, to check that ties join equal pitches. */
+  let previousPitch: number | null = null
 
   for (const line of tune.lines) {
     if (!line.staff) continue
@@ -43,6 +58,15 @@ export function exerciseFromTune(tune: TuneObject, abc: string): ParseResult {
       break
     }
     for (const item of line.staff[0]?.voices?.[0] ?? []) {
+      if (item.el_type === 'bar') {
+        const bar = item as unknown as AbcBar
+        if (bar.type.includes('repeat') || bar.startEnding) {
+          errors.push(
+            `Repeat signs and endings are not supported yet; write the music out in full (at character ${bar.startChar}).`,
+          )
+        }
+        continue
+      }
       if (item.el_type !== 'note') continue
       const note = item as unknown as AbcNote
       if (note.rest || !note.pitches) continue
@@ -55,14 +79,24 @@ export function exerciseFromTune(tune: TuneObject, abc: string): ParseResult {
         errors.push(`Grace notes are not supported yet (${at}).`)
         continue
       }
+      const pitchNumber = note.pitches[0].pitch
       if (note.pitches[0].endTie) {
+        if (pitchNumber !== previousPitch) {
+          errors.push(`A tie must join two notes of the same pitch; use ( ) for a slur (${at}).`)
+          continue
+        }
         const previous = targets[targets.length - 1]
         if (previous) previous.durationWhole += note.duration
         continue
       }
+      previousPitch = pitchNumber
       const midi = note.midiPitches?.[0]?.pitch
       if (midi === undefined) {
         errors.push(`Could not determine the pitch of the note ${at}.`)
+        continue
+      }
+      if (midi < FIRST_POSITION_LOWEST_MIDI) {
+        errors.push(`${noteName(midi, preferFlats)} is below the violin's lowest note (G3) (${at}).`)
         continue
       }
       const fingers = (note.decoration ?? []).filter((d) => FINGER_DECORATIONS.has(d))

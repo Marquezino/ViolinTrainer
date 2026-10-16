@@ -84,6 +84,28 @@ describe('parseExercise', () => {
     if (!result.ok) expect(result.errors[0]).not.toMatch(/<span/)
   })
 
+  test.each([
+    ['repeat signs', '|: A B :| c d |]'],
+    ['first and second endings', '|: A B |1 c :|2 d |]'],
+    ['a double repeat', 'A B :: c d |]'],
+  ])('rejects %s (playing them once would teach the wrong sequence)', (_, body) => {
+    const result = parseExercise(header + body)
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.errors[0]).toMatch(/Repeat signs and endings are not supported yet/)
+  })
+
+  test('rejects a tie between different pitches', () => {
+    const result = parseExercise(header + 'A- B |]')
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.errors[0]).toMatch(/A tie must join two notes of the same pitch/)
+  })
+
+  test('rejects notes below the violin range, which could never be played', () => {
+    const result = parseExercise(header + 'F, A |]')
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.errors[0]).toMatch(/F♯3 is below the violin's lowest note \(G3\)/)
+  })
+
   test('rejects an exercise without notes', () => {
     expect(parseExercise(header + 'z4 |]')).toEqual({ ok: false, errors: ['The exercise has no notes.'] })
   })
