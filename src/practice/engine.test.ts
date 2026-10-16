@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import fc from 'fast-check'
 import { analyzeSignal } from '../analysis/offline'
 import { DEFAULT_TOLERANCES, midiToHz } from '../music/pitch'
 import { parseExercise } from '../score/abc'
@@ -71,6 +72,43 @@ describe('PracticeEngine with synthetic performances', () => {
     const s = run(exercise('A |]'), note(69, 400, 40))
     expect(s.session.cursor).toBe(0)
     expect(s.lastRejection).toMatchObject({ kind: 'outOfTune' })
+  })
+
+  test('PRECISION: a glide that ends on a wrong or out-of-tune pitch is never accepted', () => {
+    const at = (cents: number) => midiToHz(69) * 2 ** (cents / 1200)
+    fc.assert(
+      fc.property(
+        fc.integer({ min: -100, max: 100 }),
+        fc.integer({ min: 40, max: 150 }),
+        fc.boolean(),
+        fc.integer({ min: 75, max: 600 }),
+        fc.integer({ min: 0, max: 10 }),
+        (startCents, endAbs, endSharp, centsPerSecond, offsetMs) => {
+          const endCents = endSharp ? endAbs : -endAbs
+          const glideMs = Math.max(50, (Math.abs(endCents - startCents) / centsPerSecond) * 1000)
+          const performance = concat(
+            silence(offsetMs),
+            tone({ hz: at(startCents), endHz: at(endCents), ms: glideMs, harmonics: VIOLIN_HARMONICS, releaseMs: 0 }),
+            tone({ hz: at(endCents), ms: 500, harmonics: VIOLIN_HARMONICS, attackMs: 0 }),
+          )
+          expect(run(exercise('A |]'), performance).session.cursor).toBe(0)
+        },
+      ),
+      // The examples were counterexamples found while tuning the tracker.
+      { numRuns: 30, examples: [[0, 40, false, 150, 0], [22, 40, false, 150, 0]] },
+    )
+  })
+
+  test('correcting a sharp note slowly is accepted once it settles in tune', () => {
+    const at = (cents: number) => midiToHz(69) * 2 ** (cents / 1200)
+    const performance = concat(
+      tone({ hz: at(40), ms: 400, harmonics: VIOLIN_HARMONICS, releaseMs: 0 }),
+      tone({ hz: at(40), endHz: at(0), ms: 600, harmonics: VIOLIN_HARMONICS, attackMs: 0, releaseMs: 0 }),
+      tone({ hz: at(0), ms: 800, harmonics: VIOLIN_HARMONICS, attackMs: 0 }),
+    )
+    const s = run(exercise('A |]'), performance)
+    expect(s.phase).toBe('finished')
+    expect(s.session.targets[0]).toMatchObject({ color: 'green', redAttempts: 1 })
   })
 
   test('28 cents flat is yellow', () => {

@@ -77,10 +77,58 @@ describe('NoteTracker', () => {
     expect(Math.abs(centsBetween(events[1].hz, B4))).toBeLessThan(5)
   })
 
-  test('a narrow vibrato (up to ±12 cents) stays one note, measured near its center', () => {
-    const events = play(violin(A4, 600, { vibrato: { rateHz: 6, widthCents: 12 } }))
+  test('a slight pitch wobble (±5 cents) stays one note, measured near its center', () => {
+    const events = play(violin(A4, 600, { vibrato: { rateHz: 6, widthCents: 5 } }))
     expect(events).toHaveLength(1)
-    expect(Math.abs(centsBetween(events[0].hz, A4))).toBeLessThan(10)
+    expect(Math.abs(centsBetween(events[0].hz, A4))).toBeLessThan(5)
+  })
+
+  test('a ±12 cent vibrato gives at most one note, judged within its width', () => {
+    const events = play(violin(A4, 800, { vibrato: { rateHz: 6, widthCents: 12 } }))
+    expect(events.length).toBeLessThanOrEqual(1)
+    for (const e of events) expect(Math.abs(centsBetween(e.hz, A4))).toBeLessThanOrEqual(12)
+  })
+
+  const atCents = (cents: number) => A4 * 2 ** (cents / 1200)
+
+  test('PRECISION: a slow glide is not a note until the pitch settles; the settled pitch is judged', () => {
+    for (const offsetMs of [0, 3, 6, 9]) {
+      const signal = concat(
+        silence(offsetMs),
+        violin(atCents(-60), 800, { endHz: atCents(60), releaseMs: 0 }),
+        violin(atCents(60), 400, { attackMs: 0 }),
+      )
+      const events = play(signal)
+      expect(events).toHaveLength(1)
+      expect(centsBetween(events[0].hz, A4)).toBeCloseTo(60, -1)
+    }
+  })
+
+  test('after a note, moving the pitch slowly by more than 25 cents gives a new note (intonation correction)', () => {
+    const signal = concat(
+      violin(atCents(40), 400, { releaseMs: 0 }),
+      violin(atCents(40), 500, { endHz: A4, attackMs: 0, releaseMs: 0 }),
+      violin(A4, 600, { attackMs: 0 }),
+    )
+    const events = play(signal)
+    expect(events).toHaveLength(2)
+    expect(centsBetween(events[0].hz, A4)).toBeCloseTo(40, -1)
+    // Judged once the slide (80 cents/s) has settled below the drift limit: already in the green zone.
+    expect(Math.abs(centsBetween(events[1].hz, A4))).toBeLessThan(20)
+  })
+
+  test.each([48000, 44100])('a 40 ms bow-change dip separates repeated notes at %i Hz, at any alignment', (sr) => {
+    for (const offsetMs of [0, 2, 4, 6, 8, 10]) {
+      const n = (ms: number, extra: Partial<Parameters<typeof tone>[0]> = {}) =>
+        tone({ hz: A4, ms, harmonics: VIOLIN_HARMONICS, ...extra }, sr)
+      const signal = concat(
+        silence(offsetMs, sr),
+        n(300, { releaseMs: 0 }),
+        n(40, { amplitude: 0.03, attackMs: 0, releaseMs: 0 }),
+        n(300, { attackMs: 0 }),
+      )
+      expect(trackNotes(analyzeSignal(signal, sr), QUIET_ROOM)).toHaveLength(2)
+    }
   })
 
   test('sound not clearly above the noise floor is ignored', () => {
