@@ -90,11 +90,17 @@ Initial parameter values. All of them are configuration constants, tuned against
 - Frame size 2048 samples, hop 512 samples (about 10.7 ms at 48 kHz).
 - A frame's level is measured over its newest 512 samples (about 11 ms), so that short dips at bow changes are visible.
 - A frame is **voiced** when clarity ≥ 0.90 and its level is at least 12 dB above the noise floor measured by the microphone check.
-- A **note event** starts when voiced frames stay within ±25 cents of their running median for at least **120 ms**. Its pitch is the median over that window.
+- The pitch detector can lock onto the 2nd harmonic when the fundamental is weak (low G-string notes). When the frame repeats clearly better at twice the detected period, the octave below is used.
+- A **note event** is confirmed when the newest **120 ms** of sound:
+  - are at least 80% voiced;
+  - stay within a total pitch spread of 25 cents (ignoring the most extreme frame on each side);
+  - are not moving: the medians of the first and last thirds of the window differ by at most 4 cents.
+- The note's pitch is the median of the newest third of that window, which is where a slide settles, not the slide itself. Slides faster than about 50 cents per second are never judged mid-slide.
 - A new note event requires either:
-  - a pitch move beyond the stability band (a new pitch, for example in a slur or when the player corrects intonation), or
-  - a **re-attack**: for at least 30 ms the level stays at least 6 dB below the note's peak, or the frames become unvoiced (both count toward the same dip), and then the level rises again.
+  - a pitch move of more than 25 cents away from the confirmed note (a new pitch, a slur, or the player correcting intonation), or
+  - a **re-attack**: for at least 30 ms the level stays at least 6 dB below the note's peak, or the frames become unvoiced (both count toward the same dip), and then the level rises again. Each frame counts for the time since the previous frame.
 - Each note event is judged once by the session.
+- During the room check, more than 10% of frames with a clear pitch means someone played. Practice is then blocked with a "stay quiet during the check" message, because the measured noise floor would hide soft notes.
 
 ## 6. Wait-mode rules
 
@@ -137,7 +143,8 @@ A target accepted after at least one red attempt is shown with its color and a r
 | A | A4 | B♭4 / B4 | C5 / C♯5 | D5 / D♯5 | E5 |
 | E | E5 | F5 / F♯5 | G5 / G♯5 | A5 / A♯5 | B5 |
 
-- Range: G3 to B5. Notes outside it trigger an editor warning and show no hint.
+- Range: G3 to B5. Notes above it trigger an editor warning and show no hint. Notes below G3 are an editor error, because they cannot be played on a violin.
+- Repeat signs, first and second endings, and ties between different pitches are editor errors in v1, because the app would otherwise expect a different note sequence than the one written.
 - Default for notes reachable two ways (D4, A4, E5): the open string.
 - Override with an ABC finger decoration (`!0!` to `!4!`). Pitch plus finger determines the string. A combination that does not exist in first position is an editor error.
 
@@ -229,12 +236,15 @@ Best stars, unlocked exercises, streaks and the leaderboard are computed from th
 
 Status after the plan 1 prototype (synthetic audio and headless Chrome only; real playing is still untested):
 
-1. Pitchy accuracy and octave errors on the G string (G3 to D4), where the fundamental is weak relative to the harmonics. *Synthetic tones: within 1 cent, no octave errors. Needs real recordings.*
-2. Re-attack detection on repeated notes played by beginners, so that nobody gets stuck on a repeated note. *Dips of 30 ms or more and about 7 dB or deeper are detected. Needs real recordings.*
+1. Pitchy accuracy and octave errors on the G string (G3 to D4), where the fundamental is weak relative to the harmonics. *Synthetic tones: within 1 cent. Octave-up errors with a missing fundamental are corrected by the sub-octave check, and that check never moved a tone with its fundamental present. Needs real recordings.*
+2. Re-attack detection on repeated notes played by beginners, so that nobody gets stuck on a repeated note. *Dips of 40 ms (about 10 dB) are detected at any alignment at 44.1 and 48 kHz. Needs real recordings.*
 3. abcjs support for the `!0!` finger decoration and for mapping rendered note elements back to targets. *Resolved: both work.*
 4. Microphone constraint handling and AudioWorklet behavior in Firefox. *Chrome works through its fake microphone; Firefox still needs a manual check.*
 5. Road noise: whether the high-pass filter and the noise-floor gate are enough in the real room. *Rumble up to half the violin's level does not disturb the pitch. Louder rumble gives no pitch rather than a wrong one.*
-6. **Known limitation:** vibrato wider than about ±15 cents keeps a note from becoming stable, so the cursor does not advance. Acceptable for beginners in v1.
+6. **Known limitations:**
+   - Wide vibrato may take several cycles to be accepted. A ±12-cent vibrato is accepted at most once, judged within its width.
+   - Slides slower than about 50 cents per second that pass through the target are credited when they pass. In a 120 ms window they cannot be told apart from a held note.
+   - Both are acceptable for beginners in v1.
 
 ## 13. After v1
 
