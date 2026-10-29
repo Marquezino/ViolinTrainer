@@ -99,7 +99,12 @@ Initial parameter values. All of them are configuration constants, tuned against
 - A new note event requires either:
   - a pitch move of more than 25 cents away from the confirmed note (a new pitch, a slur, or the player correcting intonation), or
   - a **re-attack**: for at least 30 ms the level stays at least 6 dB below the note's peak, or the frames become unvoiced (both count toward the same dip), and then the level rises again. Each frame counts for the time since the previous frame.
-- Each note event is judged once by the session.
+- A pitch that moves away and settles back within 25 cents of the held note, without a re-attack, is a glitch: no new event.
+- Each note event records whether it followed a re-attack (or silence) or only a pitch move.
+- After a rejection the tracker **re-judges** the held note: when it settles (a 240 ms stable window, so the start of a slow slide is not taken for a settled pitch) at least 5 cents from its last judged pitch, a new event is sent. A small correction into tune is therefore noticed without a re-attack.
+- Each note event is judged once by the session, except:
+  - after an acceptance, a pitch move without a re-attack that stays on the same semitone is an adjustment of the held note. It is not judged, so a repeated note always needs a re-attack, and adjusting a held note is never a wrong attempt at the next target;
+  - a rejected event without a re-attack on the target that was just rejected is the same attempt (one bow stroke): it updates the message but adds no red attempt.
 - During the room check, more than 10% of frames with a clear pitch means someone played. Practice is then blocked with a "stay quiet during the check" message, because the measured noise floor would hide soft notes.
 
 ## 6. Wait-mode rules
@@ -117,7 +122,7 @@ For the current target, compute `cents = 1200 * log2(f_note / f_target)`, where 
 
 Default tolerances: green 20 cents, yellow 35 cents. Each profile has its own values, changeable only in parent settings.
 
-A target accepted after at least one red attempt is shown with its color and a red marker. It earns at most the points of a yellow note.
+Each note shows one color, with no rings or other marks: green, yellow, or red for a target that needed more than one try (red from the first rejection on, and still red once accepted). Such a target earns at most the points of a yellow note. A bar before the next note to play separates the played notes from the rest.
 
 ### 6.2 Tuning needle
 
@@ -143,8 +148,9 @@ A target accepted after at least one red attempt is shown with its color and a r
 | A | A4 | B♭4 / B4 | C5 / C♯5 | D5 / D♯5 | E5 |
 | E | E5 | F5 / F♯5 | G5 / G♯5 | A5 / A♯5 | B5 |
 
-- Range: G3 to B5. Notes above it trigger an editor warning and show no hint. Notes below G3 are an editor error, because they cannot be played on a violin.
-- Repeat signs, first and second endings, and ties between different pitches are editor errors in v1, because the app would otherwise expect a different note sequence than the one written.
+- Range: G3 to B5. Notes above it trigger an editor warning and show no hint. Notes below G3 are an editor error, because they cannot be played on a violin. Notes above B6 are an editor error, because the pitch detector stops at 2100 Hz and could never accept them.
+- Repeat signs, first and second endings, and ties between different pitches are editor errors in v1, because the app would otherwise expect a different note sequence than the one written. A tie continuation with its own accidental must resolve to the same pitch; without one it keeps the tied note's pitch, also across a bar line.
+- A tied note is one target; every note in the tie shows its state.
 - Default for notes reachable two ways (D4, A4, E5): the open string.
 - Override with an ABC finger decoration (`!0!` to `!4!`). Pitch plus finger determines the string. A combination that does not exist in first position is an editor error.
 
@@ -214,7 +220,7 @@ Playwright in Chrome with `--use-fake-device-for-media-stream` and `--use-file-f
 | Situation | Behavior |
 |---|---|
 | Microphone permission denied or no device | A screen explaining how to allow access. Practice is unavailable. |
-| Noise floor too high (initial limit −50 dBFS after the high-pass filter) | Practice is blocked, with an explanation. No degraded mode. |
+| Noise floor too high (limit −35 dBFS after the high-pass filter; −50 blocked quiet rooms with fan noise) | Practice is blocked, with an explanation. Between −50 and −35 dBFS practice runs with a hint to play with a full sound. |
 | Audio context not started | Practice starts with a "Start" button (browsers require a user gesture). |
 | Invalid ABC, or an impossible fingering override | Error shown in the editor; the exercise cannot be saved. |
 | Note outside first position | Warning in the editor; no hint for that note. |
@@ -243,7 +249,7 @@ Status after the plan 1 prototype (synthetic audio and headless Chrome only; rea
 5. Road noise: whether the high-pass filter and the noise-floor gate are enough in the real room. *Rumble up to half the violin's level does not disturb the pitch. Louder rumble gives no pitch rather than a wrong one.*
 6. **Known limitations:**
    - Wide vibrato may take several cycles to be accepted. A ±12-cent vibrato is accepted at most once, judged within its width.
-   - Slides slower than about 50 cents per second that pass through the target are credited when they pass. In a 120 ms window they cannot be told apart from a held note.
+   - Slides slower than about 50 cents per second that pass through the target are credited when they pass. In a 120 ms window they cannot be told apart from a held note. When re-judging after a rejection the window is 240 ms, so the limit there is about 25 cents per second.
    - A brief disturbance (about 30 ms) right where a slow slide (under about 80 cents per second) stops can hide the last of the movement. The note is then judged a few cents short of where it settles. Found with synthetic tones joined mid-slide; real recordings will show whether bow noise does the same.
    - These are acceptable for beginners in v1.
 
