@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import abcjs from 'abcjs'
 import { SAMPLE_EXERCISES } from '../exercises/samples'
 import { parseExercise } from '../score/abc'
 import type { Exercise } from '../score/exercise'
@@ -15,6 +16,15 @@ M:4/4
 L:1/4
 K:D
 A B c d |]`
+
+/** Draws the ABC as it is typed, including what abcjs can make of text with errors. */
+function AbcPreview({ abc }: { abc: string }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (containerRef.current) abcjs.renderAbc(containerRef.current, abc, { responsive: 'resize' })
+  }, [abc])
+  return <div className="score score-preview" ref={containerRef} aria-label="Score preview" />
+}
 
 export function ExercisePicker({ onPick }: { onPick: (exercise: Exercise) => void }) {
   const [abc, setAbc] = useState(CUSTOM_START)
@@ -44,6 +54,7 @@ export function ExercisePicker({ onPick }: { onPick: (exercise: Exercise) => voi
           spellCheck={false}
           aria-label="ABC notation"
         />
+        <AbcPreview abc={abc} />
         {parsed.ok ? (
           <>
             {parsed.warnings.map((w) => (

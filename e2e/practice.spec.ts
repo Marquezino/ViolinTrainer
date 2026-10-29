@@ -10,13 +10,16 @@ test('open strings through the fake microphone: colors, red marker, yellow, star
   await page.getByRole('button', { name: 'Start' }).click()
   await expect(page.getByText('Stay quiet')).toBeVisible()
   await expect(page.getByText('Play the highlighted note')).toBeVisible({ timeout: 10_000 })
+  await expect(page.locator('.vt-next')).toHaveCount(1) // the bar before the next note to play
   await expect(page.locator('.stars')).toBeVisible({ timeout: 30_000 })
+  await expect(page.locator('.vt-next')).toHaveCount(0)
 
   const notes = page.locator('.score .abcjs-note')
   await expect(notes).toHaveCount(8)
   const classes = await notes.evaluateAll((els) => els.map((e) => e.getAttribute('class') ?? ''))
   const color = (c: string) => (c.includes('vt-green') ? 'green' : c.includes('vt-yellow') ? 'yellow' : 'none')
-  expect(classes.map(color)).toEqual(['green', 'green', 'green', 'green', 'green', 'green', 'green', 'yellow'])
+  // One color per note: the note that needed a second try is red, not green with a ring.
+  expect(classes.map(color)).toEqual(['green', 'green', 'green', 'green', 'green', 'none', 'green', 'yellow'])
   expect(classes.map((c) => c.includes('vt-missed'))).toEqual([false, false, false, false, false, true, false, false])
   // points: 6 greens * 2 + green-after-red 1 + yellow 1 = 14 of 16 = 87.5% -> 2 stars
   await expect(page.locator('.stars')).toHaveAttribute('aria-label', '2 of 3 stars')

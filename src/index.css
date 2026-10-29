@@ -5,12 +5,12 @@
   --muted: #6b665e;
   --border: #e3dfd6;
   --accent: #8a4b14;
-  --green: #1f8a3b;
-  --yellow: #b7860b;
-  --red: #c62828;
+  --green: #0b8a33;
+  --yellow: #e07b00;
+  --red: #d50000;
   --current: #1565c0;
   --band-green: rgba(31, 138, 59, 0.25);
-  --band-yellow: rgba(183, 134, 11, 0.2);
+  --band-yellow: rgba(224, 123, 0, 0.2);
   color-scheme: light;
   font: 18px/1.45 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
@@ -96,6 +96,10 @@ textarea {
   color: var(--yellow);
 }
 
+.hint {
+  color: var(--muted);
+}
+
 .practice-header {
   display: flex;
   align-items: center;
@@ -119,7 +123,10 @@ textarea {
   width: 100%;
 }
 
-/* Score: abcjs draws with currentColor, so color changes the note. */
+/*
+ * Score: abcjs draws with currentColor, so color changes the note. The score is always on white,
+ * so its colors are fixed: saturated enough to stand apart from black notes at small sizes.
+ */
 .score {
   margin: 16px 0;
   padding: 8px;
@@ -129,21 +136,38 @@ textarea {
 }
 
 .score .vt-current {
-  color: var(--current);
+  color: #1565c0;
 }
 
 .score .vt-green {
-  color: #1f8a3b;
+  color: #00a03a;
 }
 
 .score .vt-yellow {
-  color: #b7860b;
+  color: #f08000;
 }
 
 .score .vt-missed {
-  outline: 2px solid #c62828;
-  outline-offset: 2px;
-  border-radius: 50%;
+  color: #e00000;
+}
+
+/* Judged and current notes get a matching outline, so thin open note heads show their color. */
+.score .vt-current path,
+.score .vt-green path,
+.score .vt-yellow path,
+.score .vt-missed path {
+  stroke: currentColor;
+  stroke-width: 0.8;
+}
+
+.score .vt-next {
+  fill: #1565c0;
+  opacity: 0.6;
+}
+
+.score-preview {
+  min-height: 80px;
+  margin: 8px 0;
 }
 
 .score .vt-hint {

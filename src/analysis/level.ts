@@ -1,5 +1,11 @@
-/** Practice is blocked when the room is louder than this (spec section 10). */
-export const MAX_NOISE_FLOOR_DB = -50
+/**
+ * Practice is blocked when the room is louder than this (spec section 10). A violin at playing
+ * distance is around -30 to -15 dBFS, and notes must be 12 dB above the floor to count, so a louder
+ * room would hide most notes. -50 blocked ordinary quiet rooms with computer-fan noise.
+ */
+export const MAX_NOISE_FLOOR_DB = -35
+/** Above this the room is usable, but soft notes may go unheard; the practice screen says so. */
+export const NOISY_ROOM_HINT_DB = -50
 /** How long the microphone check listens to the quiet room. */
 export const NOISE_CHECK_MS = 2000
 

@@ -14,4 +14,5 @@ test('too noisy above the limit', () => {
   expect(isTooNoisy(MAX_NOISE_FLOOR_DB + 1)).toBe(true)
   expect(isTooNoisy(MAX_NOISE_FLOOR_DB)).toBe(false)
   expect(isTooNoisy(-70)).toBe(false)
+  expect(isTooNoisy(-45)).toBe(false) // a quiet room with a computer fan
 })

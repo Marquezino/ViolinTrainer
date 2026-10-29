@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { NOISY_ROOM_HINT_DB } from '../analysis/level'
 import type { MicrophoneError } from '../audio/microphone'
 import type { EngineSnapshot } from '../practice/engine'
 import { startSession, type SessionConfig } from '../practice/wait-session'
@@ -86,9 +87,11 @@ function PracticeStatus(props: { snapshot: EngineSnapshot; config: SessionConfig
 
     case 'practicing': {
       const rejection = snapshot.lastRejection
+      const noisyRoom = (snapshot.noiseFloorDb ?? -Infinity) > NOISY_ROOM_HINT_DB
       return (
         <>
           <TuningNeedle reading={snapshot.needle} tolerances={config.tolerances} />
+          {noisyRoom && <p className="hint">The room is a little noisy: play with a full sound so every note is heard.</p>}
           <p className="feedback" aria-live="polite">
             {rejection?.kind === 'wrongNote' && `That was ${rejection.playedName}. Try again.`}
             {rejection?.kind === 'outOfTune' && 'Right note, but out of tune. Adjust and play it again.'}
@@ -107,8 +110,8 @@ function PracticeStatus(props: { snapshot: EngineSnapshot; config: SessionConfig
             {'☆'.repeat(3 - result.stars)}
           </p>
           <p>
-            {result.points} of {result.maxPoints} points. Yellow notes were a little out of tune; notes with a red
-            ring needed more than one try.
+            {result.points} of {result.maxPoints} points. Green notes were in tune, yellow notes a little out of tune,
+            and red notes needed more than one try.
           </p>
           <button type="button" className="primary" onClick={onRestart}>
             Play again

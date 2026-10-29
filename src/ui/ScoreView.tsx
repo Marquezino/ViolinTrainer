@@ -28,6 +28,27 @@ function collectNoteElements(tune: TuneObject): Map<number, SVGElement[]> {
   return map
 }
 
+/** Vertical extent of the staff lines around a note, falling back to the note itself. */
+function staffExtent(note: SVGGraphicsElement): { top: number; bottom: number } {
+  const staff = note.closest('.abcjs-staff-wrapper')?.querySelector<SVGGraphicsElement>('.abcjs-staff')
+  const box = (staff ?? note).getBBox()
+  return { top: box.y, bottom: box.y + box.height }
+}
+
+/** A bar just before the next note to play, separating what was played from what is to come. */
+function drawNextMarker(note: SVGGraphicsElement): void {
+  const box = note.getBBox()
+  const { top, bottom } = staffExtent(note)
+  const marker = document.createElementNS(SVG_NS, 'rect')
+  marker.setAttribute('class', 'vt-next')
+  marker.setAttribute('x', String(box.x - 9))
+  marker.setAttribute('y', String(top - 12))
+  marker.setAttribute('width', '3')
+  marker.setAttribute('height', String(bottom - top + 24))
+  marker.setAttribute('rx', '1.5')
+  note.parentNode?.appendChild(marker)
+}
+
 export function ScoreView({ session }: { session: WaitSessionState }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const elementsRef = useRef(new Map<number, SVGElement[]>())
@@ -41,18 +62,22 @@ export function ScoreView({ session }: { session: WaitSessionState }) {
   }, [exercise.abc])
 
   useEffect(() => {
-    containerRef.current?.querySelectorAll('.vt-hint').forEach((el) => el.remove())
+    containerRef.current?.querySelectorAll('.vt-hint, .vt-next').forEach((el) => el.remove())
     exercise.targets.forEach((target, i) => {
-      const elements = elementsRef.current.get(target.sourceStart)
-      if (!elements || elements.length === 0) return
+      // A tied note is one target drawn as several notes; all of them show its state.
+      const elements = target.sourceStarts.flatMap((at) => elementsRef.current.get(at) ?? [])
+      if (elements.length === 0) return
       const state = session.targets[i]
       const current = i === session.cursor && !session.finished
+      // One color per note: red when it needed more than one try, else how well it was played.
+      const missed = state.redAttempts > 0
       for (const el of elements) {
-        el.classList.toggle('vt-current', current)
-        el.classList.toggle('vt-green', state.color === 'green')
-        el.classList.toggle('vt-yellow', state.color === 'yellow')
-        el.classList.toggle('vt-missed', state.redAttempts > 0)
+        el.classList.toggle('vt-current', current && !missed)
+        el.classList.toggle('vt-green', state.color === 'green' && !missed)
+        el.classList.toggle('vt-yellow', state.color === 'yellow' && !missed)
+        el.classList.toggle('vt-missed', missed)
       }
+      if (current) drawNextMarker(elements[0] as SVGGraphicsElement)
       if (state.hintVisible && target.fingering && !session.finished) {
         const group = elements[0] as SVGGraphicsElement
         const box = group.getBBox()
