@@ -137,6 +137,45 @@ describe('PracticeEngine with synthetic performances', () => {
     expect(s.session.cursor).toBe(1)
   })
 
+  const centsOfA = (cents: number) => midiToHz(69) * 2 ** (cents / 1200)
+  /** One continuous bow stroke on A that holds, slides and holds again. */
+  const heldThenMoved = (fromCents: number, toCents: number) =>
+    concat(
+      tone({ hz: centsOfA(fromCents), ms: 400, harmonics: VIOLIN_HARMONICS, releaseMs: 0 }),
+      tone({ hz: centsOfA(fromCents), endHz: centsOfA(toCents), ms: 250, harmonics: VIOLIN_HARMONICS, attackMs: 0, releaseMs: 0 }),
+      tone({ hz: centsOfA(toCents), ms: 600, harmonics: VIOLIN_HARMONICS, attackMs: 0 }),
+    )
+
+  test('PRECISION: adjusting a held, accepted note does not credit the repeated target', () => {
+    const s = run(exercise('A A |]'), heldThenMoved(-15, 15))
+    expect(s.session.cursor).toBe(1)
+    expect(s.session.targets[1]).toMatchObject({ color: null, redAttempts: 0 })
+  })
+
+  test('adjusting a held, accepted note is not a wrong attempt at the next target', () => {
+    const s = run(exercise('A B |]'), heldThenMoved(-15, 15))
+    expect(s.session.cursor).toBe(1)
+    expect(s.session.targets[1].redAttempts).toBe(0)
+    expect(s.lastRejection).toBeNull()
+  })
+
+  test('a rejected note corrected into tune by less than 25 cents is accepted', () => {
+    const s = run(exercise('A |]'), heldThenMoved(40, 15))
+    expect(s.phase).toBe('finished')
+    expect(s.session.targets[0]).toMatchObject({ color: 'green', redAttempts: 1 })
+  })
+
+  test('a slow correction within one bow stroke counts as one red attempt', () => {
+    const slow = concat(
+      tone({ hz: centsOfA(48), ms: 400, harmonics: VIOLIN_HARMONICS, releaseMs: 0 }),
+      tone({ hz: centsOfA(48), endHz: centsOfA(0), ms: 1000, harmonics: VIOLIN_HARMONICS, attackMs: 0, releaseMs: 0 }),
+      tone({ hz: centsOfA(0), ms: 600, harmonics: VIOLIN_HARMONICS, attackMs: 0 }),
+    )
+    const s = run(exercise('A |]'), slow)
+    expect(s.phase).toBe('finished')
+    expect(s.session.targets[0]).toMatchObject({ color: 'green', redAttempts: 1 })
+  })
+
   test('playing works with moderate traffic rumble and room noise', () => {
     const ex = exercise('D A |]')
     const performance = concat(note(62), note(69))
@@ -145,8 +184,15 @@ describe('PracticeEngine with synthetic performances', () => {
     expect(run(ex, noisy, room).phase).toBe('finished')
   })
 
+  test('a quiet room with fan-like noise (about -45 dBFS) still allows practice', () => {
+    const s = run(exercise('A |]'), note(69), noise(2100, 0.008))
+    expect(s.noiseFloorDb).toBeGreaterThan(-50)
+    expect(s.noiseFloorDb).toBeLessThan(-40)
+    expect(s.phase).toBe('finished')
+  })
+
   test('a noisy room blocks practice', () => {
-    const s = run(exercise('A |]'), note(69), noise(2100, 0.05))
+    const s = run(exercise('A |]'), note(69), noise(2100, 0.1))
     expect(s.phase).toBe('tooNoisy')
     expect(s.session.cursor).toBe(0)
   })
@@ -164,7 +210,7 @@ describe('PracticeEngine with synthetic performances', () => {
   })
 
   test('a loud unpitched room reports loudness, not playing', () => {
-    expect(run(exercise('A |]'), note(69), noise(2100, 0.05)).noiseProblem).toBe('loud')
+    expect(run(exercise('A |]'), note(69), noise(2100, 0.1)).noiseProblem).toBe('loud')
   })
 
   test('works with a 44.1 kHz microphone', () => {

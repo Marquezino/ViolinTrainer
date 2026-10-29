@@ -8,6 +8,13 @@ export interface TrackerConfig {
   minLevelAboveNoiseDb: number
   /** A confirmed note ends when the pitch moves this far from it (a new note or a correction). */
   stabilityCents: number
+  /** While re-judging (after a rejection), a held note settling this far from its last judged pitch is judged again. */
+  rejudgeCents: number
+  /**
+   * Stable window for re-judging a held note. Longer than minStableMs: a held note starting to slide
+   * moves too little in 120 ms to tell from a settled one, and here no attack marks the new pitch.
+   */
+  rejudgeStableMs: number
   /** A note is confirmed when its newest minStableMs of pitch stay within this total spread... */
   maxSpreadCents: number
   /**
@@ -27,6 +34,8 @@ export const DEFAULT_TRACKER_CONFIG: Omit<TrackerConfig, 'noiseFloorDb'> = {
   minClarity: 0.9,
   minLevelAboveNoiseDb: 12,
   stabilityCents: 25,
+  rejudgeCents: 5,
+  rejudgeStableMs: 240,
   maxSpreadCents: 25,
   maxDriftCents: 4,
   minStableMs: 120,
@@ -42,6 +51,11 @@ export interface NoteEvent {
   startMs: number
   /** When the note was confirmed. */
   timeMs: number
+  /**
+   * True when the note began after silence or a re-attack; false when the pitch moved within a
+   * sounding note (legato, a slide or an intonation correction).
+   */
+  reattacked: boolean
 }
 
 export function isVoiced(frame: FrameAnalysis, config: TrackerConfig): boolean {
@@ -58,11 +72,19 @@ export function median(values: readonly number[]): number {
   return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
 }
 
-/** Frames heard since sound began, before a note is confirmed. hz is null for unvoiced frames. */
+interface TrackedFrame {
+  timeMs: number
+  /** Null for unvoiced frames. */
+  hz: number | null
+}
+
+/** Frames heard since sound began, before a note is confirmed. */
 interface Candidate {
   startMs: number
-  frames: { timeMs: number; hz: number | null }[]
+  frames: TrackedFrame[]
   peakDb: number
+  /** Pitch of the sounding note this candidate moved away from; null after silence or a re-attack. */
+  movedFromHz: number | null
 }
 
 /** A confirmed note that is still sounding. */
@@ -71,12 +93,16 @@ interface Sounding {
   peakDb: number
   dipSinceMs: number | null
   dipped: boolean
+  /** Newest frames of the note, kept while re-judging. */
+  recent: TrackedFrame[]
+  recentSinceMs: number
 }
 
 /**
  * Turns analyzed frames into note events. Each played note produces exactly one event, judged on
  * the newest stable window (so a slide is judged where it settles, not on the way). A new event
- * needs a pitch move away from the confirmed note, or a re-attack (silence or a level dip).
+ * needs a pitch move away from the confirmed note, or a re-attack (silence or a level dip). A pitch
+ * that only wanders off and comes back to the held note (a glitch) gives no new event.
  */
 export class NoteTracker {
   private readonly config: TrackerConfig
@@ -84,9 +110,27 @@ export class NoteTracker {
   private sounding: Sounding | null = null
   private unvoicedSinceMs: number | null = null
   private lastFrameMs: number | null = null
+  private rejudging = false
 
   constructor(config: TrackerConfig) {
     this.config = config
+  }
+
+  /**
+   * While on (after the last note was rejected), a held note that settles at least `rejudgeCents`
+   * from its judged pitch gives a new event, so a small correction into tune is noticed.
+   */
+  setRejudging(on: boolean): void {
+    this.rejudging = on
+    if (this.sounding) {
+      this.sounding.recent = []
+      this.sounding.recentSinceMs = this.lastFrameMs ?? 0
+    }
+  }
+
+  /** How far the pitch must settle from a judged pitch to be a new event. */
+  private minChangeCents(): number {
+    return this.rejudging ? this.config.rejudgeCents : this.config.stabilityCents
   }
 
   push(frame: FrameAnalysis, timeMs: number): NoteEvent | null {
@@ -102,22 +146,29 @@ export class NoteTracker {
         this.sounding = null
         return null
       }
-      if (this.sounding) this.markDip(this.sounding, timeMs, intervalMs)
+      if (this.sounding) {
+        this.markDip(this.sounding, timeMs, intervalMs)
+        if (this.rejudging) this.sounding.recent.push({ timeMs, hz: null })
+      }
       this.candidate?.frames.push({ timeMs, hz: null })
       return null
     }
     this.unvoicedSinceMs = null
     const hz = frame.hz as number
 
+    let movedFromHz: number | null = null
     if (this.sounding) {
-      const moved = Math.abs(centsBetween(hz, this.sounding.anchorHz)) > c.stabilityCents
-      if (!moved && !this.detectReattack(this.sounding, frame.rmsDb, timeMs, intervalMs)) return null
+      const s = this.sounding
+      const moved = Math.abs(centsBetween(hz, s.anchorHz)) > c.stabilityCents
+      const reattacked = this.detectReattack(s, frame.rmsDb, timeMs, intervalMs)
+      if (!moved && !reattacked) return this.rejudging ? this.rejudgeHeld(s, hz, timeMs) : null
+      movedFromHz = reattacked ? null : s.anchorHz
       this.sounding = null
       this.candidate = null
     }
 
     if (this.candidate === null) {
-      this.candidate = { startMs: timeMs, frames: [], peakDb: frame.rmsDb }
+      this.candidate = { startMs: timeMs, frames: [], peakDb: frame.rmsDb, movedFromHz }
     }
     const candidate = this.candidate
     candidate.frames.push({ timeMs, hz })
@@ -126,14 +177,50 @@ export class NoteTracker {
   }
 
   private tryConfirm(candidate: Candidate, timeMs: number): NoteEvent | null {
-    const c = this.config
-    const windowStartMs = timeMs - c.minStableMs
+    const windowStartMs = timeMs - this.config.minStableMs
     candidate.frames = candidate.frames.filter((f) => f.timeMs >= windowStartMs)
     if (candidate.startMs > windowStartMs) return null
+    const settledHz = this.settledPitch(candidate.frames)
+    if (settledHz === null) return null
 
-    const window = candidate.frames
+    this.candidate = null
+    const sounding: Sounding = {
+      anchorHz: settledHz,
+      peakDb: candidate.peakDb,
+      dipSinceMs: null,
+      dipped: false,
+      recent: [],
+      recentSinceMs: timeMs,
+    }
+    const from = candidate.movedFromHz
+    if (from !== null && Math.abs(centsBetween(settledHz, from)) <= this.minChangeCents()) {
+      // The pitch came back to the held note: still the same note, not a new one.
+      this.sounding = { ...sounding, anchorHz: from }
+      return null
+    }
+    this.sounding = sounding
+    return { hz: settledHz, startMs: windowStartMs, timeMs, reattacked: from === null }
+  }
+
+  /** While re-judging: a new event when the held note settles somewhere new. */
+  private rejudgeHeld(s: Sounding, hz: number, timeMs: number): NoteEvent | null {
+    const windowStartMs = timeMs - this.config.rejudgeStableMs
+    s.recent.push({ timeMs, hz })
+    s.recent = s.recent.filter((f) => f.timeMs >= windowStartMs)
+    if (s.recentSinceMs > windowStartMs) return null
+    const settledHz = this.settledPitch(s.recent)
+    if (settledHz === null || Math.abs(centsBetween(settledHz, s.anchorHz)) < this.config.rejudgeCents) return null
+    s.anchorHz = settledHz
+    s.recent = []
+    s.recentSinceMs = timeMs
+    return { hz: settledHz, startMs: windowStartMs, timeMs, reattacked: false }
+  }
+
+  /** The pitch where a full stable window settled, or null when the window is not stable. */
+  private settledPitch(window: readonly TrackedFrame[]): number | null {
+    const c = this.config
     const pitches = window.flatMap((f) => (f.hz === null ? [] : [f.hz]))
-    if (pitches.length < c.minVoicedFraction * window.length) return null
+    if (pitches.length === 0 || pitches.length < c.minVoicedFraction * window.length) return null
 
     const center = median(pitches)
     const cents = pitches.map((p) => centsBetween(p, center))
@@ -147,10 +234,7 @@ export class NoteTracker {
     if (Math.abs(drift) > c.maxDriftCents) return null
 
     // Judge the newest third of the window: where the pitch settled, not the tail of a slide into it.
-    const settledHz = median(pitches.slice(-third))
-    this.candidate = null
-    this.sounding = { anchorHz: settledHz, peakDb: candidate.peakDb, dipSinceMs: null, dipped: false }
-    return { hz: settledHz, startMs: windowStartMs, timeMs }
+    return median(pitches.slice(-third))
   }
 
   /** Tracks level dips within a sounding note; true when the level comes back after a long enough dip. */

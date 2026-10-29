@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { DEFAULT_TRACKER_CONFIG, median, type TrackerConfig } from './note-tracker'
+import { DEFAULT_TRACKER_CONFIG, NoteTracker, median, type NoteEvent, type TrackerConfig } from './note-tracker'
 import { analyzeSignal, trackNotes } from './offline'
 import { centsBetween, midiToHz } from '../music/pitch'
 import { SAMPLE_RATE, VIOLIN_HARMONICS, concat, noise, silence, tone } from '../test-support/synth'
@@ -129,6 +129,58 @@ describe('NoteTracker', () => {
       )
       expect(trackNotes(analyzeSignal(signal, sr), QUIET_ROOM)).toHaveLength(2)
     }
+  })
+
+  test('events say whether they followed a re-attack or only a pitch move', () => {
+    const legato = play(concat(violin(A4, 400, { releaseMs: 0 }), violin(B4, 400, { attackMs: 0 })))
+    expect(legato.map((e) => e.reattacked)).toEqual([true, false])
+    expect(play(withDip(40, 0.1)).map((e) => e.reattacked)).toEqual([true, true])
+  })
+
+  /** Analyzed frames every 10 ms at a steady level, one per pitch in cents from A4. */
+  function framesAt(cents: readonly number[]) {
+    return cents.map((c, i) => ({ hz: atCents(c), clarity: 0.98, rmsDb: -20, timeMs: 10 * i }))
+  }
+
+  test.each([1, 2])('%i voiced outlier frames inside a held note give no second event', (count) => {
+    const frames = framesAt([...Array(40).fill(0), ...Array(count).fill(150), ...Array(40).fill(0)])
+    expect(trackNotes(frames, QUIET_ROOM)).toHaveLength(1)
+  })
+
+  /** Like trackNotes, with re-judging switched on after the first event (as the engine does after a rejection). */
+  function playRejudging(signal: Float32Array): NoteEvent[] {
+    const tracker = new NoteTracker(QUIET_ROOM)
+    const events: NoteEvent[] = []
+    for (const f of analyzeSignal(signal, SAMPLE_RATE)) {
+      const event = tracker.push(f, f.timeMs)
+      if (event) {
+        events.push(event)
+        tracker.setRejudging(true)
+      }
+    }
+    return events
+  }
+
+  const correction = (fromCents: number, toCents: number) =>
+    concat(
+      violin(atCents(fromCents), 400, { releaseMs: 0 }),
+      violin(atCents(fromCents), 250, { endHz: atCents(toCents), attackMs: 0, releaseMs: 0 }),
+      violin(atCents(toCents), 500, { attackMs: 0 }),
+    )
+
+  test('without re-judging, a correction smaller than 25 cents gives no new event', () => {
+    expect(play(correction(40, 19))).toHaveLength(1)
+  })
+
+  test('while re-judging, a small correction gives a new event where the pitch settles', () => {
+    const events = playRejudging(correction(40, 19))
+    expect(events.length).toBeGreaterThanOrEqual(2)
+    expect(centsBetween(events.at(-1)!.hz, A4)).toBeCloseTo(19, -1)
+    expect(events.slice(1).every((e) => !e.reattacked)).toBe(true)
+  })
+
+  test('while re-judging, a steady held note gives no further events', () => {
+    expect(playRejudging(violin(atCents(40), 1500))).toHaveLength(1)
   })
 
   test('sound not clearly above the noise floor is ignored', () => {

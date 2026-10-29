@@ -1,6 +1,12 @@
 import type { TimedFrame } from '../analysis/frame-analyzer'
 import { MAX_PITCHED_FRACTION, NOISE_CHECK_MS, isPitched, isTooNoisy, noiseFloorDb } from '../analysis/level'
-import { DEFAULT_TRACKER_CONFIG, NoteTracker, isVoiced, type TrackerConfig } from '../analysis/note-tracker'
+import {
+  DEFAULT_TRACKER_CONFIG,
+  NoteTracker,
+  isVoiced,
+  type NoteEvent,
+  type TrackerConfig,
+} from '../analysis/note-tracker'
 import { PitchSmoother } from '../analysis/pitch-smoother'
 import { centsBetween, hzToMidiFloat, midiToHz, noteName, type Judgement } from '../music/pitch'
 import { scoreRun, type RunResult } from './scoring'
@@ -36,6 +42,14 @@ export interface EngineSnapshot {
   result: RunResult | null
 }
 
+/** What the previous note event did, to tell a new note from an adjustment of the one still sounding. */
+interface LastJudged {
+  index: number
+  accepted: boolean
+  /** The equal-tempered note that was played. */
+  playedMidi: number
+}
+
 /** Everything between analyzed microphone frames and what the practice screen shows. No audio, no DOM. */
 export class PracticeEngine {
   private readonly sessionConfig: SessionConfig
@@ -45,6 +59,7 @@ export class PracticeEngine {
   private firstFrameMs: number | null = null
   private tracker: NoteTracker | null = null
   private trackerConfig: TrackerConfig | null = null
+  private lastJudged: LastJudged | null = null
   private current: EngineSnapshot
 
   constructor(session: WaitSessionState) {
@@ -99,9 +114,13 @@ export class PracticeEngine {
     let { session, lastRejection } = this.current
 
     const note = tracker.push(frame, frame.timeMs)
-    if (note) {
+    if (note && !this.isAdjustmentOfAcceptedNote(note)) {
+      const index = session.cursor
       const step = onNote(session, note)
-      session = step.state
+      const rejected = step.events.find((e) => e.type === 'rejected')
+      // Correcting the pitch within one bow stroke is the same attempt, not another red one.
+      const sameAttempt = rejected && !note.reattacked && this.lastJudged?.index === index && !this.lastJudged.accepted
+      if (!sameAttempt) session = step.state
       for (const e of step.events) {
         if (e.type === 'rejected') {
           lastRejection = {
@@ -109,10 +128,13 @@ export class PracticeEngine {
             kind: e.judgement.kind,
             playedName: noteName(e.judgement.playedMidi, session.exercise.preferFlats),
           }
+          this.lastJudged = { index, accepted: false, playedMidi: e.judgement.playedMidi }
         } else if (e.type === 'accepted') {
           lastRejection = null
+          this.lastJudged = { index, accepted: true, playedMidi: e.judgement.playedMidi }
         }
       }
+      tracker.setRejudging(rejected !== undefined)
     }
     session = onTick(session, frame.timeMs).state
 
@@ -131,6 +153,16 @@ export class PracticeEngine {
       return
     }
     this.current = { ...this.current, session, needle, lastRejection }
+  }
+
+  /**
+   * After a note is accepted, moving its pitch without a re-attack while staying on the same note is
+   * an adjustment of that note: it neither credits a repeated target nor counts as a wrong attempt.
+   */
+  private isAdjustmentOfAcceptedNote(note: NoteEvent): boolean {
+    const last = this.lastJudged
+    if (note.reattacked || !last?.accepted) return false
+    return Math.round(hzToMidiFloat(note.hz, this.sessionConfig.a4Hz)) === last.playedMidi
   }
 
   private needleFor(session: WaitSessionState, hz: number | null): NeedleReading | null {
