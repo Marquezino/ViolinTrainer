@@ -13,6 +13,38 @@ This project uses **bd** (beads) for issue tracking. Run `bd prime` for full wor
 > source of truth; don't `bd import` during normal operation; don't
 > reach for third-party Dolt hosting before trying the default).
 
+## Privacy (public repo)
+
+This repository is public, and Beads issues and memories are pushed to it too (`refs/dolt/data`).
+
+- Never write names, ages, relationships or other personal details of the people who use the app in commits, docs, code comments, Beads issues or Beads memories. Refer to users generically ("a beginner", "a child", "a family of beginners").
+- Never commit audio recordings. They go in `test-data/recordings/`, which is gitignored.
+- Built-in exercises must be written for this project or be traditional melodies, never copied from copyrighted method books.
+
+## Build & Test
+
+```bash
+npm install          # Node >= 24 (see .node-version)
+npm run dev          # dev server, usually http://localhost:5173
+npm test             # unit tests (Vitest)
+npm run typecheck
+npm run build
+npm run e2e          # Playwright end-to-end tests with a fake microphone
+```
+
+## Architecture Overview
+
+A browser app (Vite, React, TypeScript) that listens to a violin through the microphone and checks each note of an exercise written in ABC notation.
+
+- `src/audio`: microphone setup and the audio worklet that collects frames.
+- `src/analysis`: pitch detection, level, high-pass filter and note tracking on those frames.
+- `src/practice`: the practice engine, wait-mode session and scoring.
+- `src/score`: ABC parsing into exercises. `src/music`: pitch math and fingering.
+- `src/ui`: React screens and the hook that runs a practice session.
+- `src/exercises`: built-in sample exercises.
+
+The design spec and plans are in `docs/superpowers/`.
+
 ## Quick Reference
 
 ```bash
