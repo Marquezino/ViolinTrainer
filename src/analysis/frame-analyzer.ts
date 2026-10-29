@@ -16,6 +16,11 @@ export interface TimedFrame extends FrameAnalysis {
 /** Below open G (196 Hz) by more than a semitone; above anything a beginner plays. */
 export const MIN_PITCH_HZ = 180
 export const MAX_PITCH_HZ = 2100
+/**
+ * Highest note whose whole wrong-note range (up to 50 cents sharp) the detector still hears: B6.
+ * Anything higher could never be accepted, so exercises may not contain it.
+ */
+export const HIGHEST_DETECTABLE_MIDI = Math.floor(69 + 12 * Math.log2(MAX_PITCH_HZ / 440) - 0.5)
 const SILENCE_DB = -120
 
 export function rmsDb(frame: Float32Array): number {

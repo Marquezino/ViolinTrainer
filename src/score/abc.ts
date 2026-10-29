@@ -6,6 +6,7 @@ import {
   fingeringWithFinger,
   type Finger,
 } from '../music/fingering'
+import { HIGHEST_DETECTABLE_MIDI } from '../analysis/frame-analyzer'
 import { noteName } from '../music/pitch'
 import type { Exercise, ParseResult, Target } from './exercise'
 
@@ -14,7 +15,7 @@ interface AbcNote {
   el_type: 'note'
   startChar: number
   duration: number
-  pitches?: { name: string; pitch: number; endTie?: boolean }[]
+  pitches?: { name: string; pitch: number; accidental?: string; endTie?: boolean }[]
   rest?: unknown
   decoration?: string[]
   gracenotes?: unknown[]
@@ -30,6 +31,21 @@ interface AbcBar {
 }
 
 const FINGER_DECORATIONS = new Set(['0', '1', '2', '3', '4'])
+
+/** Semitones above C of each letter, indexed by abcjs staff position modulo 7 (0 = C). */
+const LETTER_SEMITONES = [0, 2, 4, 5, 7, 9, 11]
+const ACCIDENTAL_SEMITONES: Record<string, number> = { dblflat: -2, flat: -1, natural: 0, sharp: 1, dblsharp: 2 }
+
+/**
+ * MIDI pitch of a note written with an explicit accidental, from its staff position (0 = middle C).
+ * abcjs computes no MIDI pitch for tie continuations, so ties are checked with this.
+ */
+function explicitMidi(staffPosition: number, accidental: string): number | null {
+  const offset = ACCIDENTAL_SEMITONES[accidental]
+  if (offset === undefined) return null
+  const octave = Math.floor(staffPosition / 7)
+  return 60 + 12 * octave + LETTER_SEMITONES[staffPosition - 7 * octave] + offset
+}
 
 export function parseExercise(abc: string): ParseResult {
   const tunes = abcjs.parseOnly(abc) as TuneObject[]
@@ -50,6 +66,7 @@ export function exerciseFromTune(tune: TuneObject, abc: string): ParseResult {
   const targets: Target[] = []
   /** Staff position of the previous note, to check that ties join equal pitches. */
   let previousPitch: number | null = null
+  let previousMidi: number | null = null
 
   for (const line of tune.lines) {
     if (!line.staff) continue
@@ -79,24 +96,38 @@ export function exerciseFromTune(tune: TuneObject, abc: string): ParseResult {
         errors.push(`Grace notes are not supported yet (${at}).`)
         continue
       }
-      const pitchNumber = note.pitches[0].pitch
-      if (note.pitches[0].endTie) {
-        if (pitchNumber !== previousPitch) {
+      const { pitch: pitchNumber, accidental, endTie } = note.pitches[0]
+      if (endTie) {
+        // Without its own accidental the continuation keeps the tied note's pitch, even across a bar line.
+        const samePitch =
+          pitchNumber === previousPitch &&
+          (accidental === undefined || explicitMidi(pitchNumber, accidental) === previousMidi)
+        if (!samePitch) {
           errors.push(`A tie must join two notes of the same pitch; use ( ) for a slur (${at}).`)
           continue
         }
         const previous = targets[targets.length - 1]
-        if (previous) previous.durationWhole += note.duration
+        if (previous) {
+          previous.durationWhole += note.duration
+          previous.sourceStarts.push(note.startChar)
+        }
         continue
       }
       previousPitch = pitchNumber
       const midi = note.midiPitches?.[0]?.pitch
+      previousMidi = midi ?? null
       if (midi === undefined) {
         errors.push(`Could not determine the pitch of the note ${at}.`)
         continue
       }
       if (midi < FIRST_POSITION_LOWEST_MIDI) {
         errors.push(`${noteName(midi, preferFlats)} is below the violin's lowest note (G3) (${at}).`)
+        continue
+      }
+      if (midi > HIGHEST_DETECTABLE_MIDI) {
+        errors.push(
+          `${noteName(midi, preferFlats)} is too high to be recognised; the highest supported note is ${noteName(HIGHEST_DETECTABLE_MIDI, preferFlats)} (${at}).`,
+        )
         continue
       }
       const fingers = (note.decoration ?? []).filter((d) => FINGER_DECORATIONS.has(d))
@@ -124,7 +155,7 @@ export function exerciseFromTune(tune: TuneObject, abc: string): ParseResult {
         midi,
         durationWhole: note.duration,
         fingering,
-        sourceStart: note.startChar,
+        sourceStarts: [note.startChar],
       })
     }
   }

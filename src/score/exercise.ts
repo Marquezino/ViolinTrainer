@@ -7,8 +7,11 @@ export interface Target {
   durationWhole: number
   /** Null when the note is outside first position: no hint is shown. */
   fingering: Fingering | null
-  /** Character offset of the note in the ABC source; links the target to its rendered element. */
-  sourceStart: number
+  /**
+   * Character offsets in the ABC source of the note and of each note tied to it; they link the
+   * target to its rendered elements.
+   */
+  sourceStarts: number[]
 }
 
 export interface Exercise {

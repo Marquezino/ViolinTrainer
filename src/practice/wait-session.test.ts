@@ -15,7 +15,7 @@ function exerciseOf(midis: number[]): Exercise {
       midi,
       durationWhole: 0.25,
       fingering: defaultFingering(midi),
-      sourceStart: index,
+      sourceStarts: [index],
     })),
   }
 }

@@ -54,8 +54,17 @@ describe('parseExercise', () => {
   test('keeps the source position of each note', () => {
     const abc = header + 'A B |]'
     const ex = ok(parseExercise(abc))
-    expect(abc.slice(ex.targets[0].sourceStart, ex.targets[0].sourceStart + 1)).toBe('A')
-    expect(abc.slice(ex.targets[1].sourceStart, ex.targets[1].sourceStart + 1)).toBe('B')
+    expect(ex.targets.map((t) => t.sourceStarts.map((at) => abc[at]))).toEqual([['A'], ['B']])
+  })
+
+  test('a tied note keeps the source position of every note in the tie', () => {
+    const abc = header + 'A2- | A2- A B2 |]'
+    const ex = ok(parseExercise(abc))
+    // abcjs starts a note after a bar line at the space before it.
+    const noteAt = (at: number) => abc.slice(at).trimStart()[0]
+    expect(ex.targets[0].sourceStarts).toHaveLength(3)
+    expect(ex.targets[0].sourceStarts.map(noteAt)).toEqual(['A', 'A', 'A'])
+    expect(ex.targets[1].sourceStarts.map(noteAt)).toEqual(['B'])
   })
 
   test('notes outside first position have no fingering and produce a warning', () => {
@@ -98,6 +107,34 @@ describe('parseExercise', () => {
     const result = parseExercise(header + 'A- B |]')
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.errors[0]).toMatch(/A tie must join two notes of the same pitch/)
+  })
+
+  test.each([
+    ['a sharpened continuation', 'A- ^A |]'],
+    ['a naturalised continuation', '^A- =A |]'],
+    ['a flattened continuation', 'A- _A |]'],
+  ])('rejects a tie to %s, which changes the pitch', (_, body) => {
+    const result = parseExercise('X:1\nL:1/4\nK:C\n' + body)
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.errors[0]).toMatch(/A tie must join two notes of the same pitch/)
+  })
+
+  test.each([
+    ['across a bar line without an accidental', '^A- | A |]', 70],
+    ['with the same accidental repeated', '^A- ^A |]', 70],
+    ['to a note sharpened by the key signature', 'F- ^F |]', 66],
+  ])('accepts a tie %s', (_, body, midi) => {
+    const key = body.startsWith('F') ? 'K:G' : 'K:C'
+    const ex = ok(parseExercise(`X:1\nL:1/4\n${key}\n` + body))
+    expect(ex.targets.map((t) => t.midi)).toEqual([midi])
+  })
+
+  test('rejects notes the pitch detector cannot hear, which could never be accepted', () => {
+    const result = parseExercise("X:1\nL:1/4\nK:C\nb' c'' |]")
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.errors).toEqual([expect.stringMatching(/C7 is too high to be recognised; the highest supported note is B6/)])
+    }
   })
 
   test('rejects notes below the violin range, which could never be played', () => {
