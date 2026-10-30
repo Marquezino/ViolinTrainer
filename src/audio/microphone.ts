@@ -44,7 +44,13 @@ export async function startMicrophone(onFrame: FrameHandler): Promise<Microphone
     throw new MicrophoneError('other', String(e))
   }
 
-  const context = new AudioContext()
+  let context: AudioContext
+  try {
+    context = new AudioContext()
+  } catch (e) {
+    stream.getTracks().forEach((t) => t.stop())
+    throw new MicrophoneError('other', String(e))
+  }
   try {
     await context.audioWorklet.addModule(workletUrl)
     const source = context.createMediaStreamSource(stream)

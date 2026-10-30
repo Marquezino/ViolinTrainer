@@ -111,6 +111,7 @@ export class NoteTracker {
   private unvoicedSinceMs: number | null = null
   private lastFrameMs: number | null = null
   private rejudging = false
+  private changesVerdict: (fromHz: number, toHz: number) => boolean = () => false
 
   constructor(config: TrackerConfig) {
     this.config = config
@@ -118,10 +119,12 @@ export class NoteTracker {
 
   /**
    * While on (after the last note was rejected), a held note that settles at least `rejudgeCents`
-   * from its judged pitch gives a new event, so a small correction into tune is noticed.
+   * from its judged pitch gives a new event, so a small correction into tune is noticed. A smaller
+   * change also gives one when `changesVerdict` says it crosses a tolerance limit.
    */
-  setRejudging(on: boolean): void {
+  setRejudging(on: boolean, changesVerdict: (fromHz: number, toHz: number) => boolean = () => false): void {
     this.rejudging = on
+    this.changesVerdict = changesVerdict
     if (this.sounding) {
       this.sounding.recent = []
       this.sounding.recentSinceMs = this.lastFrameMs ?? 0
@@ -209,7 +212,9 @@ export class NoteTracker {
     s.recent = s.recent.filter((f) => f.timeMs >= windowStartMs)
     if (s.recentSinceMs > windowStartMs) return null
     const settledHz = this.settledPitch(s.recent)
-    if (settledHz === null || Math.abs(centsBetween(settledHz, s.anchorHz)) < this.config.rejudgeCents) return null
+    if (settledHz === null) return null
+    const small = Math.abs(centsBetween(settledHz, s.anchorHz)) < this.config.rejudgeCents
+    if (small && !this.changesVerdict(s.anchorHz, settledHz)) return null
     s.anchorHz = settledHz
     s.recent = []
     s.recentSinceMs = timeMs

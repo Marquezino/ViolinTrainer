@@ -101,9 +101,9 @@ Initial parameter values. All of them are configuration constants, tuned against
   - a **re-attack**: for at least 30 ms the level stays at least 6 dB below the note's peak, or the frames become unvoiced (both count toward the same dip), and then the level rises again. Each frame counts for the time since the previous frame.
 - A pitch that moves away and settles back within 25 cents of the held note, without a re-attack, is a glitch: no new event.
 - Each note event records whether it followed a re-attack (or silence) or only a pitch move.
-- After a rejection the tracker **re-judges** the held note: when it settles (a 240 ms stable window, so the start of a slow slide is not taken for a settled pitch) at least 5 cents from its last judged pitch, a new event is sent. A small correction into tune is therefore noticed without a re-attack.
+- After a rejection the tracker **re-judges** the held note: when it settles (a 240 ms stable window, so the start of a slow slide is not taken for a settled pitch) at least 5 cents from its last judged pitch, or closer but on the other side of a tolerance limit (for example from 38 to 34 cents sharp, across the 35-cent yellow limit), a new event is sent. A small correction into tune is therefore noticed without a re-attack.
 - Each note event is judged once by the session, except:
-  - after an acceptance, a pitch move without a re-attack that stays on the same semitone is an adjustment of the held note. It is not judged, so a repeated note always needs a re-attack, and adjusting a held note is never a wrong attempt at the next target;
+  - after an acceptance, a pitch move without a re-attack that stays on the same semitone is an adjustment of the held note, also when it comes back there after a detour to another note. It is not judged, so a repeated note always needs a re-attack, and adjusting a held note is never a wrong attempt at the next target;
   - a rejected event without a re-attack on the target that was just rejected is the same attempt (one bow stroke): it updates the message but adds no red attempt.
 - During the room check, more than 10% of frames with a clear pitch means someone played. Practice is then blocked with a "stay quiet during the check" message, because the measured noise floor would hide soft notes.
 

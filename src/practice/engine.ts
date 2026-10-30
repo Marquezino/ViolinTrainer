@@ -8,7 +8,7 @@ import {
   type TrackerConfig,
 } from '../analysis/note-tracker'
 import { PitchSmoother } from '../analysis/pitch-smoother'
-import { centsBetween, hzToMidiFloat, midiToHz, noteName, type Judgement } from '../music/pitch'
+import { centsBetween, hzToMidiFloat, judge, midiToHz, noteName, type Judgement } from '../music/pitch'
 import { scoreRun, type RunResult } from './scoring'
 import { onNote, onTick, startSession, type SessionConfig, type WaitSessionState } from './wait-session'
 
@@ -46,8 +46,6 @@ export interface EngineSnapshot {
 interface LastJudged {
   index: number
   accepted: boolean
-  /** The equal-tempered note that was played. */
-  playedMidi: number
 }
 
 /** Everything between analyzed microphone frames and what the practice screen shows. No audio, no DOM. */
@@ -60,6 +58,8 @@ export class PracticeEngine {
   private tracker: NoteTracker | null = null
   private trackerConfig: TrackerConfig | null = null
   private lastJudged: LastJudged | null = null
+  /** The equal-tempered note last accepted, until the next re-attack. */
+  private acceptedMidi: number | null = null
   private current: EngineSnapshot
 
   constructor(session: WaitSessionState) {
@@ -114,6 +114,7 @@ export class PracticeEngine {
     let { session, lastRejection } = this.current
 
     const note = tracker.push(frame, frame.timeMs)
+    if (note?.reattacked) this.acceptedMidi = null
     if (note && !this.isAdjustmentOfAcceptedNote(note)) {
       const index = session.cursor
       const step = onNote(session, note)
@@ -128,13 +129,21 @@ export class PracticeEngine {
             kind: e.judgement.kind,
             playedName: noteName(e.judgement.playedMidi, session.exercise.preferFlats),
           }
-          this.lastJudged = { index, accepted: false, playedMidi: e.judgement.playedMidi }
+          this.lastJudged = { index, accepted: false }
         } else if (e.type === 'accepted') {
           lastRejection = null
-          this.lastJudged = { index, accepted: true, playedMidi: e.judgement.playedMidi }
+          this.lastJudged = { index, accepted: true }
+          this.acceptedMidi = e.judgement.playedMidi
         }
       }
-      tracker.setRejudging(rejected !== undefined)
+      if (rejected) {
+        const targetMidi = session.exercise.targets[index].midi
+        const { tolerances, a4Hz } = this.sessionConfig
+        const kind = (hz: number) => judge(hz, targetMidi, tolerances, a4Hz).kind
+        tracker.setRejudging(true, (fromHz, toHz) => kind(fromHz) !== kind(toHz))
+      } else {
+        tracker.setRejudging(false)
+      }
     }
     session = onTick(session, frame.timeMs).state
 
@@ -156,13 +165,12 @@ export class PracticeEngine {
   }
 
   /**
-   * After a note is accepted, moving its pitch without a re-attack while staying on the same note is
-   * an adjustment of that note: it neither credits a repeated target nor counts as a wrong attempt.
+   * After a note is accepted, coming back to it without a re-attack is an adjustment of that note,
+   * even after a detour to another pitch: it neither credits a repeated target nor counts as a wrong attempt.
    */
   private isAdjustmentOfAcceptedNote(note: NoteEvent): boolean {
-    const last = this.lastJudged
-    if (note.reattacked || !last?.accepted) return false
-    return Math.round(hzToMidiFloat(note.hz, this.sessionConfig.a4Hz)) === last.playedMidi
+    if (note.reattacked || this.acceptedMidi === null) return false
+    return Math.round(hzToMidiFloat(note.hz, this.sessionConfig.a4Hz)) === this.acceptedMidi
   }
 
   private needleFor(session: WaitSessionState, hz: number | null): NeedleReading | null {

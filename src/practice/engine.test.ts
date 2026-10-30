@@ -165,6 +165,31 @@ describe('PracticeEngine with synthetic performances', () => {
     expect(s.session.targets[0]).toMatchObject({ color: 'green', redAttempts: 1 })
   })
 
+  /** One continuous bow stroke on A through the given pitches (in cents), holding each. */
+  const oneStroke = (...centsSteps: number[]) =>
+    concat(
+      ...centsSteps.flatMap((cents, i) => {
+        const last = i === centsSteps.length - 1
+        const hold = tone({ hz: centsOfA(cents), ms: 600, harmonics: VIOLIN_HARMONICS, attackMs: i === 0 ? undefined : 0, releaseMs: last ? undefined : 0 })
+        if (last) return [hold]
+        const next = centsOfA(centsSteps[i + 1])
+        const slide = tone({ hz: centsOfA(cents), endHz: next, ms: 250, harmonics: VIOLIN_HARMONICS, attackMs: 0, releaseMs: 0 })
+        return [hold, slide]
+      }),
+    )
+
+  test('PRECISION: a repeated target needs a re-attack even after an intervening wrong pitch', () => {
+    const s = run(exercise('A A |]'), oneStroke(0, 70, 0))
+    expect(s.session.cursor).toBe(1)
+    expect(s.session.targets[1].color).toBeNull()
+  })
+
+  test('a rejected note corrected across the yellow limit by less than the re-judge step is accepted', () => {
+    const s = run(exercise('A |]'), oneStroke(38, 34))
+    expect(s.phase).toBe('finished')
+    expect(s.session.targets[0]).toMatchObject({ color: 'yellow', redAttempts: 1 })
+  })
+
   test('a slow correction within one bow stroke counts as one red attempt', () => {
     const slow = concat(
       tone({ hz: centsOfA(48), ms: 400, harmonics: VIOLIN_HARMONICS, releaseMs: 0 }),

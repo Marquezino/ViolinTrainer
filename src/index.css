@@ -7,6 +7,8 @@
   --accent: #8a4b14;
   --green: #0b8a33;
   --yellow: #e07b00;
+  /* Darker than --yellow so small warning text stays readable (at least 4.5:1). */
+  --warning-text: #a65400;
   --red: #d50000;
   --current: #1565c0;
   --band-green: rgba(31, 138, 59, 0.25);
@@ -25,6 +27,7 @@
     --accent: #e0a060;
     --green: #4cc26a;
     --yellow: #e2b53a;
+    --warning-text: #e2b53a;
     --red: #ef5350;
     --current: #64b5f6;
     --band-green: rgba(76, 194, 106, 0.25);
@@ -93,7 +96,7 @@ textarea {
 }
 
 .warning {
-  color: var(--yellow);
+  color: var(--warning-text);
 }
 
 .hint {
