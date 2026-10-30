@@ -16,3 +16,6 @@ e2e/fixtures/*.wav
 .beads-credential-key
 .beads/proxieddb/
 *.gate.lock*
+
+# Personal Claude Code settings
+.claude/settings.local.json
