@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { DEFAULT_TRACKER_CONFIG, NoteTracker, median, type NoteEvent, type TrackerConfig } from './note-tracker'
+import { DEFAULT_TRACKER_CONFIG, NoteTracker, isVoiced, median, type NoteEvent, type TrackerConfig } from './note-tracker'
 import { analyzeSignal, trackNotes } from './offline'
 import { centsBetween, midiToHz } from '../music/pitch'
 import { SAMPLE_RATE, VIOLIN_HARMONICS, concat, noise, silence, tone } from '../test-support/synth'
@@ -20,6 +20,22 @@ describe('median', () => {
   test('odd and even lengths', () => {
     expect(median([3, 1, 2])).toBe(2)
     expect(median([4, 1, 3, 2])).toBe(2.5)
+  })
+})
+
+describe('isVoiced', () => {
+  const frame = (rmsDb: number) => ({ hz: 440, clarity: 1, rmsDb })
+
+  test('in a digitally silent room a frame must still reach the absolute minimum level', () => {
+    const silentRoom: TrackerConfig = { ...DEFAULT_TRACKER_CONFIG, noiseFloorDb: -120 }
+    expect(isVoiced(frame(DEFAULT_TRACKER_CONFIG.minLevelDb - 1), silentRoom)).toBe(false)
+    expect(isVoiced(frame(DEFAULT_TRACKER_CONFIG.minLevelDb), silentRoom)).toBe(true)
+  })
+
+  test('in a noisy room the room-relative limit is the higher one and still applies', () => {
+    const noisyRoom: TrackerConfig = { ...DEFAULT_TRACKER_CONFIG, noiseFloorDb: -40 }
+    expect(isVoiced(frame(-29), noisyRoom)).toBe(false)
+    expect(isVoiced(frame(-28), noisyRoom)).toBe(true)
   })
 })
 

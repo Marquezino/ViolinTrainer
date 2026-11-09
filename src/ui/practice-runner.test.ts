@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import type { FrameAnalysis } from '../analysis/frame-analyzer'
-import { MicrophoneError, type FrameHandler, type Microphone } from '../audio/microphone'
+import { MicrophoneError, type FrameHandler, type Microphone, type VoiceProcessing } from '../audio/microphone'
 import { DEFAULT_A4_HZ, DEFAULT_TOLERANCES } from '../music/pitch'
 import type { EngineSnapshot } from '../practice/engine'
 import { DEFAULT_HINT_DELAY_MS, type SessionConfig } from '../practice/wait-session'
@@ -19,7 +19,11 @@ const exercise = parsed.exercise
 
 /** A microphone whose start can be resolved or rejected by the test. */
 function fakeMicrophones() {
-  const pending: { resolve: () => void; reject: (e: unknown) => void; onFrame: FrameHandler }[] = []
+  const pending: {
+    resolve: (voiceProcessingOn?: VoiceProcessing[]) => void
+    reject: (e: unknown) => void
+    onFrame: FrameHandler
+  }[] = []
   const stopped: number[] = []
   let created = 0
   const startMicrophone = (onFrame: FrameHandler) =>
@@ -28,7 +32,8 @@ function fakeMicrophones() {
       pending.push({
         onFrame,
         reject,
-        resolve: () => resolve({ sampleRate: 48000, stop: async () => void stopped.push(id) }),
+        resolve: (voiceProcessingOn = []) =>
+          resolve({ sampleRate: 48000, voiceProcessingOn, stop: async () => void stopped.push(id) }),
       })
     })
   return { pending, stopped, startMicrophone }
@@ -41,6 +46,7 @@ function setup(analysis: FrameAnalysis = { hz: null, clarity: 0, rmsDb: -90 }) {
   const statuses: PracticeStatus[] = []
   const errors: (MicrophoneError | null)[] = []
   const snapshots: EngineSnapshot[] = []
+  const voiceProcessing: VoiceProcessing[][] = []
   const runner = new PracticeRunner(
     {
       startMicrophone: mics.startMicrophone,
@@ -57,6 +63,7 @@ function setup(analysis: FrameAnalysis = { hz: null, clarity: 0, rmsDb: -90 }) {
         errors.push(error)
       },
       onSnapshot: (s) => void snapshots.push(s),
+      onVoiceProcessing: (on) => void voiceProcessing.push(on),
     },
   )
   const runFrames = () => {
@@ -64,7 +71,7 @@ function setup(analysis: FrameAnalysis = { hz: null, clarity: 0, rmsDb: -90 }) {
     frames.clear()
     callbacks.forEach((cb) => cb())
   }
-  return { runner, mics, frames, statuses, errors, snapshots, runFrames }
+  return { runner, mics, frames, statuses, errors, snapshots, voiceProcessing, runFrames }
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
@@ -131,6 +138,25 @@ describe('PracticeRunner', () => {
     expect(t.snapshots.at(-1)?.phase).toBe('tooNoisy')
     expect(t.mics.stopped).toEqual([0])
     expect(t.frames.size).toBe(0)
+  })
+
+  test('reports the voice processing the open microphone kept on', async () => {
+    const t = setup()
+    const started = t.runner.start(exercise, config)
+    await flush()
+    t.mics.pending[0].resolve(['autoGainControl'])
+    await started
+    expect(t.voiceProcessing).toEqual([['autoGainControl']])
+  })
+
+  test('a microphone that opens after the player left reports nothing', async () => {
+    const t = setup()
+    const started = t.runner.start(exercise, config)
+    await flush()
+    await t.runner.stop()
+    t.mics.pending[0].resolve(['autoGainControl'])
+    await started
+    expect(t.voiceProcessing).toEqual([])
   })
 
   test('a refused microphone reports the error', async () => {

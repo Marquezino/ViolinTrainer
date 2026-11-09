@@ -12,9 +12,19 @@ export class MicrophoneError extends Error {
   }
 }
 
+export type VoiceProcessing = 'autoGainControl' | 'noiseSuppression' | 'echoCancellation'
+
 export interface Microphone {
   sampleRate: number
+  /** Processing the browser kept on although the app asked for it to be off. */
+  voiceProcessingOn: VoiceProcessing[]
   stop(): Promise<void>
+}
+
+/** Only an explicit `true` counts: a browser that does not report a setting gives no warning. */
+export function voiceProcessingLeftOn(settings: MediaTrackSettings): VoiceProcessing[] {
+  const all: VoiceProcessing[] = ['autoGainControl', 'noiseSuppression', 'echoCancellation']
+  return all.filter((name) => settings[name] === true)
 }
 
 /** Frames arrive with their time on the audio clock (ms since the microphone started). */
@@ -68,6 +78,7 @@ export async function startMicrophone(onFrame: FrameHandler): Promise<Microphone
     await context.resume()
     return {
       sampleRate: context.sampleRate,
+      voiceProcessingOn: voiceProcessingLeftOn(stream.getAudioTracks()[0].getSettings()),
       async stop() {
         node.port.onmessage = null
         stream.getTracks().forEach((t) => t.stop())

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { NOISY_ROOM_HINT_DB } from '../analysis/level'
-import type { MicrophoneError } from '../audio/microphone'
+import type { MicrophoneError, VoiceProcessing } from '../audio/microphone'
 import type { EngineSnapshot } from '../practice/engine'
 import { startSession, type SessionConfig } from '../practice/wait-session'
 import type { Exercise } from '../score/exercise'
@@ -16,9 +16,15 @@ const MIC_ERROR_TEXT: Record<MicrophoneError['kind'], string> = {
   other: 'The microphone could not be started.',
 }
 
+const VOICE_PROCESSING_TEXT: Record<VoiceProcessing, string> = {
+  autoGainControl: 'automatic volume',
+  noiseSuppression: 'noise suppression',
+  echoCancellation: 'echo cancellation',
+}
+
 export function PracticeScreen(props: { exercise: Exercise; config: SessionConfig; onExit: () => void }) {
   const { exercise, config, onExit } = props
-  const { status, error, snapshot, start } = usePractice(exercise, config)
+  const { status, error, snapshot, voiceProcessingOn, start } = usePractice(exercise, config)
   const preview = useMemo(() => startSession(exercise, config, 0), [exercise, config])
   const active = status !== 'idle' && status !== 'error' && snapshot !== null
 
@@ -51,13 +57,25 @@ export function PracticeScreen(props: { exercise: Exercise; config: SessionConfi
         </section>
       )}
 
-      {active && <PracticeStatus snapshot={snapshot} config={config} onRestart={() => void start()} />}
+      {active && (
+        <PracticeStatus
+          snapshot={snapshot}
+          config={config}
+          voiceProcessingOn={voiceProcessingOn}
+          onRestart={() => void start()}
+        />
+      )}
     </main>
   )
 }
 
-function PracticeStatus(props: { snapshot: EngineSnapshot; config: SessionConfig; onRestart: () => void }) {
-  const { snapshot, config, onRestart } = props
+function PracticeStatus(props: {
+  snapshot: EngineSnapshot
+  config: SessionConfig
+  voiceProcessingOn: VoiceProcessing[]
+  onRestart: () => void
+}) {
+  const { snapshot, config, voiceProcessingOn, onRestart } = props
 
   switch (snapshot.phase) {
     case 'measuringNoise':
@@ -92,6 +110,12 @@ function PracticeStatus(props: { snapshot: EngineSnapshot; config: SessionConfig
         <>
           <TuningNeedle reading={snapshot.needle} tolerances={config.tolerances} />
           {noisyRoom && <p className="hint">The room is a little noisy: play with a full sound so every note is heard.</p>}
+          {voiceProcessingOn.length > 0 && (
+            <p className="hint">
+              The browser kept its audio processing on ({voiceProcessingOn.map((v) => VOICE_PROCESSING_TEXT[v]).join(', ')}
+              ). Notes may be judged less reliably. Try another browser or microphone.
+            </p>
+          )}
           <p className="feedback" aria-live="polite">
             {rejection?.kind === 'wrongNote' && `That was ${rejection.playedName}. Try again.`}
             {rejection?.kind === 'outOfTune' && 'Right note, but out of tune. Adjust and play it again.'}

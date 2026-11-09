@@ -1,5 +1,5 @@
 import type { FrameAnalyzer } from '../analysis/frame-analyzer'
-import { MicrophoneError, type FrameHandler, type Microphone } from '../audio/microphone'
+import { MicrophoneError, type FrameHandler, type Microphone, type VoiceProcessing } from '../audio/microphone'
 import { PracticeEngine, type EngineSnapshot } from '../practice/engine'
 import { startSession, type SessionConfig } from '../practice/wait-session'
 import type { Exercise } from '../score/exercise'
@@ -16,6 +16,7 @@ export interface RunnerDeps {
 export interface RunnerCallbacks {
   onStatus: (status: PracticeStatus, error: MicrophoneError | null) => void
   onSnapshot: (snapshot: EngineSnapshot) => void
+  onVoiceProcessing: (on: VoiceProcessing[]) => void
 }
 
 /**
@@ -61,6 +62,7 @@ export class PracticeRunner {
     }
 
     this.mic = mic
+    this.callbacks.onVoiceProcessing(mic.voiceProcessingOn)
     this.callbacks.onStatus('running', null)
     const publish = () => {
       this.frameRequest = null
