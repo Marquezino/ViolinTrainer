@@ -1,8 +1,8 @@
 # Violin Trainer
 
-A practice app for beginner violinists that runs in the browser. You write an exercise in [ABC notation](https://abcnotation.com/), see it as sheet music, and play it on your violin. The app listens through the microphone and moves on only when you play the right note in tune (wait mode). It shows a tuning needle, green, yellow or red feedback, fading fingering hints, and stars at the end.
+A practice app for beginner violinists that runs in the browser. You write an exercise in [ABC notation](https://en.wikipedia.org/wiki/ABC_notation), see it as sheet music, and play it on your violin. The app listens through the microphone and moves on only when you play the right note in tune (wait mode). It shows a tuning needle, green, yellow or red feedback, fading fingering hints, and stars at the end.
 
-**Status:** early. The core practice loop works and is covered by unit and end-to-end tests with generated tones, but it hasn't been checked with a real violin yet. Profiles, an exercise editor and a learning path are planned.
+**Status:** early. The core practice loop works, has been checked by hand with a real violin, and is covered by unit and end-to-end tests with generated tones. Profiles, an exercise editor and a learning path are planned.
 
 ## Running it
 
