@@ -1,0 +1,264 @@
+:root {
+  --bg: #fbfaf7;
+  --surface: #ffffff;
+  --text: #1d1b18;
+  --muted: #6b665e;
+  --border: #e3dfd6;
+  --accent: #8a4b14;
+  --green: #0b8a33;
+  --yellow: #e07b00;
+  /* Darker than --yellow so small warning text stays readable (at least 4.5:1). */
+  --warning-text: #a65400;
+  --red: #d50000;
+  --current: #1565c0;
+  --band-green: rgba(31, 138, 59, 0.25);
+  --band-yellow: rgba(224, 123, 0, 0.2);
+  color-scheme: light;
+  font: 18px/1.45 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #171614;
+    --surface: #211f1c;
+    --text: #f1eee8;
+    --muted: #a8a196;
+    --border: #3a3631;
+    --accent: #e0a060;
+    --green: #4cc26a;
+    --yellow: #e2b53a;
+    --warning-text: #e2b53a;
+    --red: #ef5350;
+    --current: #64b5f6;
+    --band-green: rgba(76, 194, 106, 0.25);
+    --band-yellow: rgba(226, 181, 58, 0.2);
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+button {
+  font: inherit;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+textarea {
+  width: 100%;
+  font: 16px/1.4 ui-monospace, Menlo, monospace;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.exercise-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.exercise-list button {
+  width: 100%;
+  text-align: left;
+}
+
+.errors,
+.panel-error {
+  color: var(--red);
+}
+
+.warning {
+  color: var(--warning-text);
+}
+
+.hint {
+  color: var(--muted);
+}
+
+.practice-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.practice-header h1 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.panel {
+  margin: 24px 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.panel progress {
+  width: 100%;
+}
+
+/*
+ * Score: abcjs draws with currentColor, so color changes the note. The score is always on white,
+ * so its colors are fixed: saturated enough to stand apart from black notes at small sizes.
+ */
+.score {
+  margin: 16px 0;
+  padding: 8px;
+  background: #ffffff;
+  border-radius: 12px;
+  color: #1d1b18;
+}
+
+.score .vt-current {
+  color: #1565c0;
+}
+
+.score .vt-green {
+  color: #00a03a;
+}
+
+.score .vt-yellow {
+  color: #f08000;
+}
+
+.score .vt-missed {
+  color: #e00000;
+}
+
+/* Judged and current notes get a matching outline, so thin open note heads show their color. */
+.score .vt-current path,
+.score .vt-green path,
+.score .vt-yellow path,
+.score .vt-missed path {
+  stroke: currentColor;
+  stroke-width: 0.8;
+}
+
+.score .vt-next {
+  fill: #1565c0;
+  opacity: 0.6;
+}
+
+.score-preview {
+  min-height: 80px;
+  margin: 8px 0;
+}
+
+.score .vt-hint {
+  font: bold 13px system-ui, sans-serif;
+  fill: #1565c0;
+}
+
+.needle {
+  margin: 16px 0;
+}
+
+.needle-scale {
+  position: relative;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.needle-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.needle-band-yellow {
+  background: var(--band-yellow);
+}
+
+.needle-band-green {
+  background: var(--band-green);
+}
+
+.needle-center {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--muted);
+}
+
+.needle-pointer {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 6px;
+  margin-left: -3px;
+  border-radius: 3px;
+  background: var(--text);
+}
+
+.needle-green .needle-pointer {
+  background: var(--green);
+}
+
+.needle-yellow .needle-pointer {
+  background: var(--yellow);
+}
+
+.needle-off .needle-pointer {
+  background: var(--red);
+}
+
+.needle-labels {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.needle-value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.needle-off .needle-value {
+  color: var(--red);
+}
+
+.feedback {
+  min-height: 1.5em;
+  color: var(--red);
+}
+
+.stars {
+  font-size: 2.5rem;
+  color: var(--yellow);
+  margin: 0;
+}

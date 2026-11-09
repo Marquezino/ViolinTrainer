@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "ViolinTrainer",
+  "project_id": "d6693169-bbba-405a-bf8f-a26b7e449c0b"
+}
