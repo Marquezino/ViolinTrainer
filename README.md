@@ -6,7 +6,9 @@ A practice app for beginner violinists that runs in the browser. You write an ex
 
 ## Running it
 
-Requires Node 24 or later.
+Open https://marquezino.github.io/ViolinTrainer/ in Chrome or Firefox. It is rebuilt from `main` after every change that passes the tests. Everything runs in the browser: no audio leaves your computer.
+
+To run it locally instead (requires Node 24 or later):
 
 ```bash
 npm install
