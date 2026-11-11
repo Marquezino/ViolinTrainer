@@ -221,6 +221,8 @@ Playwright in Chrome with `--use-fake-device-for-media-stream` and `--use-file-f
 |---|---|
 | Microphone permission denied or no device | A screen explaining how to allow access. Practice is unavailable. |
 | Noise floor too high (limit −35 dBFS after the high-pass filter; −50 blocked quiet rooms with fan noise) | Practice is blocked, with an explanation. Between −50 and −35 dBFS practice runs with a hint to play with a full sound. |
+| Very faint pitched sound in a digitally silent room | Not judged: a frame must also reach an absolute minimum of −60 dBFS (a first guess, to be checked with real recordings). |
+| Browser keeps auto gain, noise suppression or echo cancellation on | Practice runs with a warning naming what stayed on, because judging may be less reliable. A setting the browser does not report gives no warning. |
 | Audio context not started | Practice starts with a "Start" button (browsers require a user gesture). |
 | Invalid ABC, or an impossible fingering override | Error shown in the editor; the exercise cannot be saved. |
 | Note outside first position | Warning in the editor; no hint for that note. |

@@ -6,6 +6,11 @@ export interface TrackerConfig {
   noiseFloorDb: number
   minClarity: number
   minLevelAboveNoiseDb: number
+  /**
+   * Absolute minimum level (dBFS), for rooms so quiet that the room-relative limit would accept
+   * faint sound from elsewhere. Well below a violin at playing distance (-30 to -15 dBFS).
+   */
+  minLevelDb: number
   /** A confirmed note ends when the pitch moves this far from it (a new note or a correction). */
   stabilityCents: number
   /** While re-judging (after a rejection), a held note settling this far from its last judged pitch is judged again. */
@@ -33,6 +38,7 @@ export interface TrackerConfig {
 export const DEFAULT_TRACKER_CONFIG: Omit<TrackerConfig, 'noiseFloorDb'> = {
   minClarity: 0.9,
   minLevelAboveNoiseDb: 12,
+  minLevelDb: -60,
   stabilityCents: 25,
   rejudgeCents: 5,
   rejudgeStableMs: 240,
@@ -62,7 +68,7 @@ export function isVoiced(frame: FrameAnalysis, config: TrackerConfig): boolean {
   return (
     frame.hz !== null &&
     frame.clarity >= config.minClarity &&
-    frame.rmsDb >= config.noiseFloorDb + config.minLevelAboveNoiseDb
+    frame.rmsDb >= Math.max(config.minLevelDb, config.noiseFloorDb + config.minLevelAboveNoiseDb)
   )
 }
 

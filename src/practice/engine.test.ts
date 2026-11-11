@@ -43,6 +43,18 @@ function note(midi: number, ms = 400, cents = 0, harmonics = VIOLIN_HARMONICS) {
 }
 
 describe('PracticeEngine with synthetic performances', () => {
+  test('PRECISION: faint pitched sound in a digitally silent room is not judged', () => {
+    const faint = tone({ hz: midiToHz(69), ms: 500, harmonics: VIOLIN_HARMONICS, amplitude: 0.0002 })
+    const s = run(exercise('A B |]'), faint)
+    expect(s.session.cursor).toBe(0)
+    expect(s.lastRejection).toBeNull()
+  })
+
+  test('a soft note in a digitally silent room is still accepted', () => {
+    const soft = tone({ hz: midiToHz(69), ms: 500, harmonics: VIOLIN_HARMONICS, amplitude: 0.01 })
+    expect(run(exercise('A B |]'), soft).session.cursor).toBe(1)
+  })
+
   test('open strings played in tune: all green, 3 stars', () => {
     const ex = exercise('G, D A e |]')
     const s = run(ex, concat(note(55, 400, 0, WEAK_FUNDAMENTAL_HARMONICS), note(62), note(69), note(76)))

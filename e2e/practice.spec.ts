@@ -26,6 +26,20 @@ test('open strings through the fake microphone: colors, red marker, yellow, star
   expect(errors).toEqual([])
 })
 
+test('warns when the browser keeps its audio processing on', async ({ page }) => {
+  await page.addInitScript(() => {
+    const getSettings = MediaStreamTrack.prototype.getSettings
+    MediaStreamTrack.prototype.getSettings = function () {
+      return { ...getSettings.call(this), autoGainControl: true }
+    }
+  })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Open strings' }).click()
+  await page.getByRole('button', { name: 'Start' }).click()
+  await expect(page.getByText('Play the highlighted note')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText('automatic volume')).toBeVisible()
+})
+
 /** Records every microphone track and AudioContext the page creates, so tests can check they are released. */
 async function trackAudioResources(page: import('@playwright/test').Page) {
   await page.addInitScript(() => {
