@@ -26,6 +26,8 @@ npm run build
 npm run e2e          # end-to-end tests in Chrome with a fake microphone (Playwright)
 ```
 
+The app is available in English and Brazilian Portuguese; it picks the language from the browser and has a language menu. To add a language, copy `src/i18n/messages/en.ts`, add the locale to `LOCALES`, `LOCALE_LABELS` (in `src/i18n/locales.ts`), the detection table there and `MESSAGES` (in `src/i18n/messages/index.ts`), then fix whatever `npm run typecheck` lists.
+
 The design spec and implementation plans are in [`docs/superpowers/`](docs/superpowers/). Issues are tracked with [Beads](https://github.com/gastownhall/beads): run `bd ready` to see open work.
 
 ## License
