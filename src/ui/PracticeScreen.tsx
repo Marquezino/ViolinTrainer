@@ -4,6 +4,7 @@ import type { MicrophoneError, VoiceProcessing } from '../audio/microphone'
 import type { EngineSnapshot } from '../practice/engine'
 import { startSession, type SessionConfig } from '../practice/wait-session'
 import type { Exercise } from '../score/exercise'
+import { noteName } from '../music/pitch'
 import { ScoreView } from './ScoreView'
 import { TuningNeedle } from './TuningNeedle'
 import { usePractice } from './usePractice'
@@ -34,7 +35,7 @@ export function PracticeScreen(props: { exercise: Exercise; config: SessionConfi
         <button type="button" onClick={onExit}>
           ← Exercises
         </button>
-        <h1>{exercise.title}</h1>
+        <h1>{exercise.title ?? 'Untitled'}</h1>
       </header>
 
       <ScoreView session={active ? snapshot.session : preview} />
@@ -61,6 +62,7 @@ export function PracticeScreen(props: { exercise: Exercise; config: SessionConfi
         <PracticeStatus
           snapshot={snapshot}
           config={config}
+          preferFlats={exercise.preferFlats}
           voiceProcessingOn={voiceProcessingOn}
           onRestart={() => void start()}
         />
@@ -72,10 +74,11 @@ export function PracticeScreen(props: { exercise: Exercise; config: SessionConfi
 function PracticeStatus(props: {
   snapshot: EngineSnapshot
   config: SessionConfig
+  preferFlats: boolean
   voiceProcessingOn: VoiceProcessing[]
   onRestart: () => void
 }) {
-  const { snapshot, config, voiceProcessingOn, onRestart } = props
+  const { snapshot, config, preferFlats, voiceProcessingOn, onRestart } = props
 
   switch (snapshot.phase) {
     case 'measuringNoise':
@@ -108,7 +111,7 @@ function PracticeStatus(props: {
       const noisyRoom = (snapshot.noiseFloorDb ?? -Infinity) > NOISY_ROOM_HINT_DB
       return (
         <>
-          <TuningNeedle reading={snapshot.needle} tolerances={config.tolerances} />
+          <TuningNeedle reading={snapshot.needle} tolerances={config.tolerances} preferFlats={preferFlats} />
           {noisyRoom && <p className="hint">The room is a little noisy: play with a full sound so every note is heard.</p>}
           {voiceProcessingOn.length > 0 && (
             <p className="hint">
@@ -117,7 +120,7 @@ function PracticeStatus(props: {
             </p>
           )}
           <p className="feedback" aria-live="polite">
-            {rejection?.kind === 'wrongNote' && `That was ${rejection.playedName}. Try again.`}
+            {rejection?.kind === 'wrongNote' && `That was ${noteName(rejection.playedMidi, preferFlats)}. Try again.`}
             {rejection?.kind === 'outOfTune' && 'Right note, but out of tune. Adjust and play it again.'}
           </p>
         </>

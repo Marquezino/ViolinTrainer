@@ -6,7 +6,7 @@ import type { Exercise } from '../score/exercise'
 
 const SAMPLES: Exercise[] = SAMPLE_EXERCISES.map(({ id, abc }) => {
   const result = parseExercise(abc)
-  if (!result.ok) throw new Error(`Built-in exercise ${id} is invalid: ${result.errors.join('; ')}`)
+  if (!result.ok) throw new Error(`Built-in exercise ${id} is invalid: ${result.errors.map((e) => e.code).join('; ')}`)
   return result.exercise
 })
 
@@ -37,9 +37,9 @@ export function ExercisePicker({ onPick }: { onPick: (exercise: Exercise) => voi
         <h2>Exercises</h2>
         <ul className="exercise-list">
           {SAMPLES.map((exercise) => (
-            <li key={exercise.title}>
+            <li key={exercise.title ?? exercise.abc}>
               <button type="button" onClick={() => onPick(exercise)}>
-                {exercise.title}
+                {exercise.title ?? 'Untitled'}
               </button>
             </li>
           ))}
@@ -58,8 +58,8 @@ export function ExercisePicker({ onPick }: { onPick: (exercise: Exercise) => voi
         {parsed.ok ? (
           <>
             {parsed.warnings.map((w) => (
-              <p key={w} className="warning">
-                {w}
+              <p key={`${w.code}-${'at' in w ? w.at : ''}`} className="warning">
+                {w.code}
               </p>
             ))}
             <button type="button" className="primary" onClick={() => onPick(parsed.exercise)}>
@@ -69,7 +69,7 @@ export function ExercisePicker({ onPick }: { onPick: (exercise: Exercise) => voi
         ) : (
           <ul className="errors" role="alert">
             {parsed.errors.map((e) => (
-              <li key={e}>{e}</li>
+              <li key={`${e.code}-${'at' in e ? e.at : ''}`}>{e.code}</li>
             ))}
           </ul>
         )}

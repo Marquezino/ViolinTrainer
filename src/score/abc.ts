@@ -7,8 +7,7 @@ import {
   type Finger,
 } from '../music/fingering'
 import { HIGHEST_DETECTABLE_MIDI } from '../analysis/frame-analyzer'
-import { noteName } from '../music/pitch'
-import type { Exercise, ParseResult, Target } from './exercise'
+import type { AbcProblem, Exercise, ParseResult, Target } from './exercise'
 
 /** Runtime fields abcjs sets on note elements that its type definitions leave out. */
 interface AbcNote {
@@ -50,16 +49,16 @@ function explicitMidi(staffPosition: number, accidental: string): number | null 
 export function parseExercise(abc: string): ParseResult {
   const tunes = abcjs.parseOnly(abc) as TuneObject[]
   if (tunes.length === 0) {
-    return { ok: false, errors: ['No tune found. An exercise needs an X: line and a K: line.'] }
+    return { ok: false, errors: [{ code: 'noTune' }], preferFlats: false }
   }
-  if (tunes.length > 1) return { ok: false, errors: ['Write only one tune per exercise.'] }
+  if (tunes.length > 1) return { ok: false, errors: [{ code: 'multipleTunes' }], preferFlats: false }
   return exerciseFromTune(tunes[0], abc)
 }
 
 /** Builds an exercise from a tune that abcjs has parsed (or rendered). */
 export function exerciseFromTune(tune: TuneObject, abc: string): ParseResult {
-  const errors = (tune.warnings ?? []).map(stripHtml)
-  const warnings: string[] = []
+  const errors: AbcProblem[] = (tune.warnings ?? []).map(abcSyntaxProblem)
+  const warnings: AbcProblem[] = []
   tune.setUpAudio({})
 
   const preferFlats = (tune.getKeySignature().accidentals ?? []).some((a) => a.acc === 'flat')
@@ -71,29 +70,27 @@ export function exerciseFromTune(tune: TuneObject, abc: string): ParseResult {
   for (const line of tune.lines) {
     if (!line.staff) continue
     if (line.staff.length > 1 || line.staff.some((s) => (s.voices?.length ?? 0) > 1)) {
-      errors.push('Only a single melody line is supported (one staff, one voice).')
+      errors.push({ code: 'multipleVoices' })
       break
     }
     for (const item of line.staff[0]?.voices?.[0] ?? []) {
       if (item.el_type === 'bar') {
         const bar = item as unknown as AbcBar
         if (bar.type.includes('repeat') || bar.startEnding) {
-          errors.push(
-            `Repeat signs and endings are not supported yet; write the music out in full (at character ${bar.startChar}).`,
-          )
+          errors.push({ code: 'repeats', at: bar.startChar })
         }
         continue
       }
       if (item.el_type !== 'note') continue
       const note = item as unknown as AbcNote
       if (note.rest || !note.pitches) continue
-      const at = `at character ${note.startChar}`
+      const at = note.startChar
       if (note.pitches.length > 1) {
-        errors.push(`Chords and double stops are not supported yet (${at}).`)
+        errors.push({ code: 'chord', at })
         continue
       }
       if (note.gracenotes?.length) {
-        errors.push(`Grace notes are not supported yet (${at}).`)
+        errors.push({ code: 'graceNotes', at })
         continue
       }
       const { pitch: pitchNumber, accidental, endTie } = note.pitches[0]
@@ -103,7 +100,7 @@ export function exerciseFromTune(tune: TuneObject, abc: string): ParseResult {
           pitchNumber === previousPitch &&
           (accidental === undefined || explicitMidi(pitchNumber, accidental) === previousMidi)
         if (!samePitch) {
-          errors.push(`A tie must join two notes of the same pitch; use ( ) for a slur (${at}).`)
+          errors.push({ code: 'tieDifferentPitch', at })
           continue
         }
         const previous = targets[targets.length - 1]
@@ -117,22 +114,20 @@ export function exerciseFromTune(tune: TuneObject, abc: string): ParseResult {
       const midi = note.midiPitches?.[0]?.pitch
       previousMidi = midi ?? null
       if (midi === undefined) {
-        errors.push(`Could not determine the pitch of the note ${at}.`)
+        errors.push({ code: 'unknownPitch', at })
         continue
       }
       if (midi < FIRST_POSITION_LOWEST_MIDI) {
-        errors.push(`${noteName(midi, preferFlats)} is below the violin's lowest note (G3) (${at}).`)
+        errors.push({ code: 'belowViolin', midi, lowestMidi: FIRST_POSITION_LOWEST_MIDI, at })
         continue
       }
       if (midi > HIGHEST_DETECTABLE_MIDI) {
-        errors.push(
-          `${noteName(midi, preferFlats)} is too high to be recognised; the highest supported note is ${noteName(HIGHEST_DETECTABLE_MIDI, preferFlats)} (${at}).`,
-        )
+        errors.push({ code: 'tooHigh', midi, highestMidi: HIGHEST_DETECTABLE_MIDI, at })
         continue
       }
       const fingers = (note.decoration ?? []).filter((d) => FINGER_DECORATIONS.has(d))
       if ((note.decoration ?? []).includes('5')) {
-        errors.push(`Finger 5 does not exist on the violin (${at}).`)
+        errors.push({ code: 'fingerFive', at })
         continue
       }
       let fingering = defaultFingering(midi)
@@ -140,15 +135,11 @@ export function exerciseFromTune(tune: TuneObject, abc: string): ParseResult {
         const finger = Number(fingers[0]) as Finger
         fingering = fingeringWithFinger(midi, finger)
         if (fingering === null) {
-          errors.push(
-            `${noteName(midi, preferFlats)} cannot be played with finger ${finger} in first position (${at}).`,
-          )
+          errors.push({ code: 'fingerImpossible', midi, finger, at })
           continue
         }
       } else if (fingering === null) {
-        warnings.push(
-          `${noteName(midi, preferFlats)} is outside first position; no hint is shown for it (${at}).`,
-        )
+        warnings.push({ code: 'outsideFirstPosition', midi, at })
       }
       targets.push({
         index: targets.length,
@@ -160,16 +151,29 @@ export function exerciseFromTune(tune: TuneObject, abc: string): ParseResult {
     }
   }
 
-  if (errors.length === 0 && targets.length === 0) errors.push('The exercise has no notes.')
-  if (errors.length > 0) return { ok: false, errors }
+  if (errors.length === 0 && targets.length === 0) errors.push({ code: 'noNotes' })
+  if (errors.length > 0) return { ok: false, errors, preferFlats }
 
   const exercise: Exercise = {
-    title: tune.metaText.title ?? 'Untitled',
+    title: tune.metaText.title ?? null,
     abc,
     targets,
     preferFlats,
   }
   return { ok: true, exercise, warnings }
+}
+
+/** Turns an abcjs warning, such as `Music Line:5:3: Unknown character ignored: ...`, into a problem. */
+export function abcSyntaxProblem(warning: string): AbcProblem {
+  const text = stripHtml(warning)
+  const match = /^Music Line:(\d+):(\d+):\s*/.exec(text)
+  if (!match) return { code: 'abcSyntax', detail: text, line: null, column: null }
+  return {
+    code: 'abcSyntax',
+    detail: text.slice(match[0].length),
+    line: Number(match[1]),
+    column: Number(match[2]),
+  }
 }
 
 function stripHtml(s: string): string {

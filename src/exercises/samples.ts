@@ -1,8 +1,10 @@
 // Built-in exercises, written for this project. Exercises copied from method books
 // (Suzuki, I Can Read Music, ...) are copyrighted: never add them to this file.
 
+export type SampleId = 'open-strings' | 'a-string-fingers' | 'd-major-scale' | 'repeated-notes' | 'twinkle'
+
 export interface SampleExercise {
-  id: string
+  id: SampleId
   abc: string
 }
 
