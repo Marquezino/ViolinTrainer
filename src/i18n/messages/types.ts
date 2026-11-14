@@ -39,6 +39,7 @@ export interface Messages {
     playAgain: string
     roomCheck: string
     heardPlaying: string
+    /** `db` is already rounded. */
     tooNoisy: (db: number, f: Formatters) => string
     noisyRoomHint: string
     /** `processing` holds the already translated names of the processing left on. */
@@ -54,7 +55,7 @@ export interface Messages {
     prompt: string
     /** `note` is already formatted. */
     playing: (note: string) => string
-    /** `cents` is the size of the deviation (never negative). */
+    /** `cents` is the size of the deviation, already rounded (never negative). */
     cents: (cents: number, direction: CentsDirection, f: Formatters) => string
     inTune: string
     flatLabel: string

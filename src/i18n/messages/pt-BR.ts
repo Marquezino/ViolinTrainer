@@ -75,7 +75,7 @@ export const ptBR: Messages = {
     },
     multipleVoices: () => 'Só dá para usar uma linha de melodia (uma pauta, uma voz).',
     repeats: (p, f) =>
-      `Sinais de repetição e casas de 1ª e 2ª vez ainda não são aceitos; escreva a música toda, sem repetir trechos (${at(p.at, f)}).`,
+      `Sinais de repetição e casas de 1ª e 2ª vez ainda não são aceitos; escreva a música inteira, copiando os trechos que se repetem (${at(p.at, f)}).`,
     chord: (p, f) => `Acordes e cordas duplas ainda não são aceitos (${at(p.at, f)}).`,
     graceNotes: (p, f) => `Apojaturas ainda não são aceitas (${at(p.at, f)}).`,
     tieDifferentPitch: (p, f) =>
