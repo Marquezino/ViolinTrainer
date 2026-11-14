@@ -9,6 +9,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:4173',
     browserName: 'chromium',
+    locale: 'en-US',
     launchOptions: {
       args: [
         '--use-fake-ui-for-media-stream',

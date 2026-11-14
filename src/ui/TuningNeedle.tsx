@@ -1,4 +1,5 @@
-import { noteName, type Tolerances } from '../music/pitch'
+import { useI18n } from '../i18n/I18nProvider'
+import type { Tolerances } from '../music/pitch'
 import type { NeedleReading } from '../practice/engine'
 
 const RANGE_CENTS = 50
@@ -12,20 +13,22 @@ export function TuningNeedle({
   tolerances: Tolerances
   preferFlats: boolean
 }) {
+  const { t, format } = useI18n()
+  const f = format(preferFlats)
   const greenWidth = (tolerances.greenCents / RANGE_CENTS) * 50
   const yellowWidth = (tolerances.yellowCents / RANGE_CENTS) * 50
 
-  let label = 'Play the highlighted note'
+  let label = t.needle.prompt
   let zone = 'idle'
   let left: number | null = null
   if (reading?.playedMidi != null) {
-    label = `You are playing ${noteName(reading.playedMidi, preferFlats)}`
+    label = t.needle.playing(f.note(reading.playedMidi))
     zone = 'off'
   } else if (reading) {
     const cents = Math.round(reading.cents)
     const abs = Math.abs(cents)
     zone = abs <= tolerances.greenCents ? 'green' : abs <= tolerances.yellowCents ? 'yellow' : 'off'
-    label = abs === 0 ? 'In tune' : `${abs} cents ${cents > 0 ? 'sharp' : 'flat'}`
+    label = abs === 0 ? t.needle.inTune : t.needle.cents(abs, cents > 0 ? 'sharp' : 'flat', f)
     left = 50 + (Math.max(-RANGE_CENTS, Math.min(RANGE_CENTS, reading.cents)) / RANGE_CENTS) * 50
   }
 
@@ -38,9 +41,9 @@ export function TuningNeedle({
         {left !== null && <div className="needle-pointer" style={{ left: `${left}%` }} />}
       </div>
       <div className="needle-labels">
-        <span>flat</span>
+        <span>{t.needle.flatLabel}</span>
         <span className="needle-value">{label}</span>
-        <span>sharp</span>
+        <span>{t.needle.sharpLabel}</span>
       </div>
     </div>
   )
