@@ -8,7 +8,7 @@ import {
   type TrackerConfig,
 } from '../analysis/note-tracker'
 import { PitchSmoother } from '../analysis/pitch-smoother'
-import { centsBetween, hzToMidiFloat, judge, midiToHz, noteName, type Judgement } from '../music/pitch'
+import { centsBetween, hzToMidiFloat, judge, midiToHz, type Judgement } from '../music/pitch'
 import { scoreRun, type RunResult } from './scoring'
 import { onNote, onTick, startSession, type SessionConfig, type WaitSessionState } from './wait-session'
 
@@ -21,13 +21,13 @@ export interface NeedleReading {
   /** Deviation of the current sound from the current target. */
   cents: number
   /** Name of the note being played when it is more than 50 cents away from the target. */
-  playedName: string | null
+  playedMidi: number | null
 }
 
 export interface Rejection {
   index: number
   kind: Judgement['kind']
-  playedName: string
+  playedMidi: number
 }
 
 export interface EngineSnapshot {
@@ -127,7 +127,7 @@ export class PracticeEngine {
           lastRejection = {
             index: e.index,
             kind: e.judgement.kind,
-            playedName: noteName(e.judgement.playedMidi, session.exercise.preferFlats),
+            playedMidi: e.judgement.playedMidi,
           }
           this.lastJudged = { index, accepted: false }
         } else if (e.type === 'accepted') {
@@ -177,10 +177,7 @@ export class PracticeEngine {
     if (hz === null) return null
     const target = session.exercise.targets[session.cursor]
     const cents = centsBetween(hz, midiToHz(target.midi, this.sessionConfig.a4Hz))
-    const playedName =
-      Math.abs(cents) > 50
-        ? noteName(Math.round(hzToMidiFloat(hz, this.sessionConfig.a4Hz)), session.exercise.preferFlats)
-        : null
-    return { cents, playedName }
+    const playedMidi = Math.abs(cents) > 50 ? Math.round(hzToMidiFloat(hz, this.sessionConfig.a4Hz)) : null
+    return { cents, playedMidi }
   }
 }
