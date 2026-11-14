@@ -7,6 +7,7 @@ import {
   fingeringWithFinger,
   noteKey,
 } from './fingering'
+import { SOLFEGE_NOTE_NAMES } from './pitch'
 
 describe('defaultFingering', () => {
   test('open strings', () => {
@@ -63,6 +64,8 @@ describe('labels and keys', () => {
     expect(fingeringLabel({ string: 'A', finger: 2, mark: 'high' })).toBe('A 2↑')
     expect(fingeringLabel({ string: 'D', finger: 1, mark: 'low' })).toBe('D 1↓')
     expect(fingeringLabel({ string: 'E', finger: 0, mark: null })).toBe('E 0')
+    expect(fingeringLabel({ string: 'A', finger: 2, mark: 'high' }, SOLFEGE_NOTE_NAMES)).toBe('Lá 2↑')
+    expect(fingeringLabel({ string: 'G', finger: 0, mark: null }, SOLFEGE_NOTE_NAMES)).toBe('Sol 0')
   })
 
   test('note key distinguishes the same pitch on different strings', () => {
