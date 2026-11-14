@@ -30,10 +30,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setLocaleState(next)
   }, [])
 
-  const value = useMemo<I18n>(
-    () => ({ locale, t, setLocale, format: (preferFlats) => formatters(locale, t, preferFlats) }),
-    [locale, t, setLocale],
-  )
+  const value = useMemo<I18n>(() => {
+    const sharps = formatters(locale, t, false)
+    const flats = formatters(locale, t, true)
+    return { locale, t, setLocale, format: (preferFlats) => (preferFlats ? flats : sharps) }
+  }, [locale, t, setLocale])
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }
 

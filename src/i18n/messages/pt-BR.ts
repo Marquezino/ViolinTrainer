@@ -1,9 +1,8 @@
 import { SOLFEGE_NOTE_NAMES } from '../../music/pitch'
 import type { Formatters, Messages } from './types'
 
-const plural = new Intl.PluralRules('pt-BR')
 const count = (n: number, one: string, other: string, f: Formatters) =>
-  `${f.number(n)} ${plural.select(n) === 'one' ? one : other}`
+  `${f.number(n)} ${f.plural(n) === 'one' ? one : other}`
 const at = (offset: number, f: Formatters) => `no caractere ${f.number(offset)}`
 
 export const ptBR: Messages = {
@@ -53,7 +52,7 @@ export const ptBR: Messages = {
 
   microphoneErrors: {
     denied:
-      'O acesso ao microfone está bloqueado. Clique no ícone do microfone na barra de endereço, permita o acesso e aperte Começar de novo.',
+      'O acesso ao microfone está bloqueado. Clique no ícone do microfone na barra de endereços, permita o acesso e aperte Começar de novo.',
     notFound: 'Nenhum microfone foi encontrado. Conecte um e aperte Começar de novo.',
     unsupported: 'Este navegador não consegue analisar o som do microfone. Use uma versão atual do Chrome ou do Firefox.',
     other: 'Não foi possível ligar o microfone.',

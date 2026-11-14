@@ -1,9 +1,8 @@
 import { LETTER_NOTE_NAMES } from '../../music/pitch'
 import type { Formatters, Messages } from './types'
 
-const plural = new Intl.PluralRules('en')
 const count = (n: number, one: string, other: string, f: Formatters) =>
-  `${f.number(n)} ${plural.select(n) === 'one' ? one : other}`
+  `${f.number(n)} ${f.plural(n) === 'one' ? one : other}`
 const at = (offset: number, f: Formatters) => `at character ${f.number(offset)}`
 
 export const en: Messages = {

@@ -11,6 +11,7 @@ test('switching to Portuguese translates the app and is remembered', async ({ pa
   await page.getByRole('button', { name: 'Corda Lá: dedos 0 a 3' }).click()
   await expect(page.getByRole('heading', { name: 'Corda Lá: dedos 0 a 3' })).toBeVisible()
   await expect(page.locator('.vt-hint').first()).toHaveText('Lá 0')
+  await expect(page.getByText('fique em silêncio por dois segundos')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Começar' })).toBeVisible()
 })
 
@@ -21,6 +22,7 @@ test('typed ABC survives a language switch and its problems are translated', asy
   await page.getByRole('combobox', { name: 'Language' }).selectOption('pt-BR')
   await expect(page.locator('textarea')).toHaveValue('X:1\nK:D\nA [GB] |]')
   await expect(page.getByRole('alert')).not.toContainText('Chords')
+  await expect(page.getByRole('alert')).toContainText('Acordes')
   // The textbox's accessible name is translated now, so find it by tag.
   await page.locator('textarea').fill('X:1\nK:D\nA B |]') // no T: line
   await page.getByRole('button', { name: 'Praticar este' }).click()

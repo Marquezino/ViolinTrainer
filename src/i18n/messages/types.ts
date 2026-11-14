@@ -7,6 +7,8 @@ import type { AbcProblem, AbcProblemCode } from '../../score/exercise'
 export interface Formatters {
   note(midi: number): string
   number(n: number): string
+  /** Plural category of `n` under this language's rules. */
+  plural(n: number): Intl.LDMLPluralRule
 }
 
 export type CentsDirection = 'flat' | 'sharp'
