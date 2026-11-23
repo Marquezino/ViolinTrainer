@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import abcjs from 'abcjs'
 import type { TuneObject } from 'abcjs'
+import { useI18n } from '../i18n/I18nProvider'
 import { fingeringLabel } from '../music/fingering'
 import type { WaitSessionState } from '../practice/wait-session'
 
@@ -53,6 +54,7 @@ export function ScoreView({ session }: { session: WaitSessionState }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const elementsRef = useRef(new Map<number, SVGElement[]>())
   const { exercise } = session
+  const { t } = useI18n()
 
   useEffect(() => {
     const container = containerRef.current
@@ -86,11 +88,11 @@ export function ScoreView({ session }: { session: WaitSessionState }) {
         text.setAttribute('x', String(box.x + box.width / 2))
         text.setAttribute('y', String(box.y - 8))
         text.setAttribute('text-anchor', 'middle')
-        text.textContent = fingeringLabel(target.fingering)
+        text.textContent = fingeringLabel(target.fingering, t.noteNames)
         group.parentNode?.appendChild(text)
       }
     })
-  }, [session, exercise])
+  }, [session, exercise, t.noteNames])
 
   return <div className="score" ref={containerRef} />
 }

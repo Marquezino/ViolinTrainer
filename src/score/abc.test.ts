@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'vitest'
-import { parseExercise } from './abc'
-import type { Exercise, ParseResult } from './exercise'
+import { abcSyntaxProblem, parseExercise } from './abc'
+import type { AbcProblem, Exercise, ParseResult } from './exercise'
 
 const header = 'X:1\nT:Test\nM:4/4\nL:1/4\nK:D\n'
 
 function ok(result: ParseResult): Exercise {
-  if (!result.ok) throw new Error(`expected success, got: ${result.errors.join('; ')}`)
+  if (!result.ok) throw new Error(`expected success, got: ${result.errors.map((e) => e.code).join('; ')}`)
   return result.exercise
 }
 
@@ -41,7 +41,7 @@ describe('parseExercise', () => {
   test('an impossible finger is an error', () => {
     const result = parseExercise(header + '!3!B |]')
     expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.errors[0]).toMatch(/B4 cannot be played with finger 3/)
+    if (!result.ok) expect(result.errors[0]).toEqual({ code: 'fingerImpossible', midi: 71, finger: 3, at: expect.any(Number) })
   })
 
   test('skips rests and merges tied notes', () => {
@@ -72,7 +72,7 @@ describe('parseExercise', () => {
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.exercise.targets[1].fingering).toBeNull()
-      expect(result.warnings[0]).toMatch(/C♯6 is outside first position/)
+      expect(result.warnings[0]).toMatchObject({ code: 'outsideFirstPosition', midi: 85 })
     }
   })
 
@@ -84,13 +84,27 @@ describe('parseExercise', () => {
   test('rejects chords', () => {
     const result = parseExercise(header + '[GB] A |]')
     expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.errors[0]).toMatch(/Chords and double stops/)
+    if (!result.ok) expect(result.errors[0]).toMatchObject({ code: 'chord' })
   })
 
-  test('rejects syntax errors with readable messages', () => {
-    const result = parseExercise(header + 'A ) B |]')
+  test('reports abcjs syntax errors with their position and readable detail', () => {
+    const result = parseExercise('X:1\nM:4/4\nL:1/4\nK:D\nA ) B |]')
     expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.errors[0]).not.toMatch(/<span/)
+    if (!result.ok) {
+      expect(result.errors[0]).toMatchObject({ code: 'abcSyntax', line: 5, column: 3 })
+      const p = result.errors[0] as Extract<AbcProblem, { code: 'abcSyntax' }>
+      expect(p.detail).toMatch(/^Unknown character ignored/)
+      expect(p.detail).not.toMatch(/<span/)
+    }
+  })
+
+  test('abcSyntaxProblem strips HTML and leaves position null when there is none', () => {
+    expect(abcSyntaxProblem('Something odd <b>here</b>')).toEqual({
+      code: 'abcSyntax',
+      detail: 'Something odd here',
+      line: null,
+      column: null,
+    })
   })
 
   test.each([
@@ -100,13 +114,13 @@ describe('parseExercise', () => {
   ])('rejects %s (playing them once would teach the wrong sequence)', (_, body) => {
     const result = parseExercise(header + body)
     expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.errors[0]).toMatch(/Repeat signs and endings are not supported yet/)
+    if (!result.ok) expect(result.errors[0]).toMatchObject({ code: 'repeats' })
   })
 
   test('rejects a tie between different pitches', () => {
     const result = parseExercise(header + 'A- B |]')
     expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.errors[0]).toMatch(/A tie must join two notes of the same pitch/)
+    if (!result.ok) expect(result.errors[0]).toMatchObject({ code: 'tieDifferentPitch' })
   })
 
   test.each([
@@ -116,7 +130,7 @@ describe('parseExercise', () => {
   ])('rejects a tie to %s, which changes the pitch', (_, body) => {
     const result = parseExercise('X:1\nL:1/4\nK:C\n' + body)
     expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.errors[0]).toMatch(/A tie must join two notes of the same pitch/)
+    if (!result.ok) expect(result.errors[0]).toMatchObject({ code: 'tieDifferentPitch' })
   })
 
   test.each([
@@ -133,26 +147,37 @@ describe('parseExercise', () => {
     const result = parseExercise("X:1\nL:1/4\nK:C\nb' c'' |]")
     expect(result.ok).toBe(false)
     if (!result.ok) {
-      expect(result.errors).toEqual([expect.stringMatching(/C7 is too high to be recognised; the highest supported note is B6/)])
+      expect(result.errors).toEqual([{ code: 'tooHigh', midi: 96, highestMidi: 95, at: expect.any(Number) }])
     }
   })
 
   test('rejects notes below the violin range, which could never be played', () => {
     const result = parseExercise(header + 'F, A |]')
     expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.errors[0]).toMatch(/F♯3 is below the violin's lowest note \(G3\)/)
+    if (!result.ok) expect(result.errors[0]).toMatchObject({ code: 'belowViolin', midi: 54, lowestMidi: 55 })
   })
 
   test('rejects an exercise without notes', () => {
-    expect(parseExercise(header + 'z4 |]')).toEqual({ ok: false, errors: ['The exercise has no notes.'] })
+    expect(parseExercise(header + 'z4 |]')).toEqual({ ok: false, errors: [{ code: 'noNotes' }], preferFlats: false })
   })
 
   test('rejects text that is not a tune', () => {
-    expect(parseExercise('').ok).toBe(false)
+    // abcjs returns one empty tune for any text, so this surfaces as "no notes"; noTune is a safeguard.
+    expect(parseExercise('')).toEqual({ ok: false, errors: [{ code: 'noNotes' }], preferFlats: false })
+  })
+
+  test('rejects two tunes', () => {
+    const result = parseExercise(header + 'A |]\n\n' + header + 'B |]')
+    expect(result).toEqual({ ok: false, errors: [{ code: 'multipleTunes' }], preferFlats: false })
+  })
+
+  test('the title is null when the ABC has none', () => {
+    expect(ok(parseExercise('X:1\nL:1/4\nK:C\nA |]')).title).toBeNull()
   })
 
   test('rejects two voices', () => {
     const result = parseExercise('X:1\nL:1/4\nK:C\nV:1\nA B |]\nV:2\nc d |]')
     expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.errors[0]).toMatchObject({ code: 'multipleVoices' })
   })
 })

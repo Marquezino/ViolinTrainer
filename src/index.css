@@ -103,6 +103,23 @@ textarea {
   color: var(--muted);
 }
 
+.picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+select {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
 .practice-header {
   display: flex;
   align-items: center;
@@ -261,4 +278,9 @@ textarea {
   font-size: 2.5rem;
   color: var(--yellow);
   margin: 0;
+}
+
+/* The practice header already shows the title, translated for built-in exercises; the picker preview keeps it. */
+.practice .score .abcjs-title {
+  display: none;
 }

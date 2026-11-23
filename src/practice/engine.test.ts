@@ -77,7 +77,7 @@ describe('PracticeEngine with synthetic performances', () => {
     expect(s.phase).toBe('practicing')
     expect(s.session.cursor).toBe(1)
     expect(s.session.targets[1]).toMatchObject({ color: null, redAttempts: 3 })
-    expect(s.lastRejection).toMatchObject({ index: 1, kind: 'wrongNote', playedName: 'C♯5' })
+    expect(s.lastRejection).toMatchObject({ index: 1, kind: 'wrongNote', playedMidi: 73 })
   })
 
   test('PRECISION: 40 cents sharp is out of tune and does not advance', () => {
@@ -131,7 +131,7 @@ describe('PracticeEngine with synthetic performances', () => {
     const g3 = tone({ hz: midiToHz(55), ms: 500, harmonics: [0, 1, 0.2, 0.4, 0.1] })
     const s = run(exercise('G |]'), g3)
     expect(s.session.cursor).toBe(0)
-    expect(s.lastRejection).toMatchObject({ kind: 'wrongNote', playedName: 'G3' })
+    expect(s.lastRejection).toMatchObject({ kind: 'wrongNote', playedMidi: 55 })
   })
 
   test('28 cents flat is yellow', () => {
@@ -273,7 +273,7 @@ describe('PracticeEngine with synthetic performances', () => {
     for (const f of frames) {
       engine.handleFrame(f)
       const needle = engine.snapshot().needle
-      if (needle && needle.playedName === 'B4') sawFarOff = true
+      if (needle && needle.playedMidi === 71) sawFarOff = true
     }
     expect(sawFarOff).toBe(true)
   })

@@ -1,3 +1,5 @@
+import { LETTER_NOTE_NAMES, type NoteNames } from './pitch'
+
 export type ViolinString = 'G' | 'D' | 'A' | 'E'
 export type Finger = 0 | 1 | 2 | 3 | 4
 export type FingerMark = 'low' | 'high' | null
@@ -9,6 +11,8 @@ export interface Fingering {
 }
 
 const OPEN_STRING_MIDI: Record<ViolinString, number> = { G: 55, D: 62, A: 69, E: 76 }
+/** Index of each open string's letter in a NoteNames list. */
+const STRING_LETTER: Record<ViolinString, number> = { G: 4, D: 1, A: 5, E: 2 }
 const STRINGS: ViolinString[] = ['G', 'D', 'A', 'E']
 
 /** First position: semitones above the open string -> finger and mark. */
@@ -46,9 +50,9 @@ export function fingeringWithFinger(midi: number, finger: Finger): Fingering | n
   return candidates(midi).find((f) => f.finger === finger) ?? null
 }
 
-export function fingeringLabel(f: Fingering): string {
+export function fingeringLabel(f: Fingering, names: NoteNames = LETTER_NOTE_NAMES): string {
   const mark = f.mark === 'low' ? '↓' : f.mark === 'high' ? '↑' : ''
-  return `${f.string} ${f.finger}${mark}`
+  return `${names[STRING_LETTER[f.string]]} ${f.finger}${mark}`
 }
 
 /** Identifies a note as the reader learns it: pitch plus where it is played. */

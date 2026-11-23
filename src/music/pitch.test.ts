@@ -6,6 +6,7 @@ import {
   hzToMidiFloat,
   judge,
   midiToHz,
+  SOLFEGE_NOTE_NAMES,
   noteName,
   validateTolerances,
 } from './pitch'
@@ -82,9 +83,9 @@ describe('validateTolerances', () => {
     expect(validateTolerances(DEFAULT_TOLERANCES)).toBeNull()
   })
   test('rejects inconsistent values', () => {
-    expect(validateTolerances({ greenCents: 0, yellowCents: 10 })).not.toBeNull()
-    expect(validateTolerances({ greenCents: 30, yellowCents: 20 })).not.toBeNull()
-    expect(validateTolerances({ greenCents: 20, yellowCents: 50 })).not.toBeNull()
+    expect(validateTolerances({ greenCents: 0, yellowCents: 10 })).toBe('greenNotPositive')
+    expect(validateTolerances({ greenCents: 30, yellowCents: 20 })).toBe('yellowBelowGreen')
+    expect(validateTolerances({ greenCents: 20, yellowCents: 50 })).toBe('yellowTooWide')
   })
 })
 
@@ -94,5 +95,14 @@ describe('noteName', () => {
     expect(noteName(60, false)).toBe('C4')
     expect(noteName(70, false)).toBe('A♯4')
     expect(noteName(70, true)).toBe('B♭4')
+  })
+
+  test('noteName in solfège', () => {
+    expect(noteName(69, false, SOLFEGE_NOTE_NAMES)).toBe('Lá4')
+    expect(noteName(58, true, SOLFEGE_NOTE_NAMES)).toBe('Si♭3')
+    expect(noteName(66, false, SOLFEGE_NOTE_NAMES)).toBe('Fá♯4')
+    expect(noteName(59, false, SOLFEGE_NOTE_NAMES)).toBe('Si3')
+    expect(noteName(60, false, SOLFEGE_NOTE_NAMES)).toBe('Dó4')
+    expect(noteName(61, true, SOLFEGE_NOTE_NAMES)).toBe('Ré♭4')
   })
 })
