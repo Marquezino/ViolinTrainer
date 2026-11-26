@@ -1,5 +1,7 @@
 // The built-in units. Ids are fixed so a new app version can update a unit in
-// place: bump `version` whenever its exercise list changes.
+// place: bump `version` whenever its exercise list (or order) changes. A fix to
+// a melody or title in samples.ts needs no bump: the sync updates the stored
+// exercise in place whenever its ABC or title differs from the code.
 import { SAMPLE_EXERCISES, type SampleId } from './samples'
 
 export type BuiltinUnitId = 'first-steps' | 'traditional-tunes'

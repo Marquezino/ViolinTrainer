@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, expect, test } from 'vitest'
 import { BUILTIN_UNITS, builtinExerciseId, type BuiltinUnit } from '../exercises/builtin-units'
-import { SAMPLE_EXERCISES } from '../exercises/samples'
+import { SAMPLE_EXERCISES, type SampleExercise } from '../exercises/samples'
 import { syncBuiltinUnits } from './builtin'
 import { openDatabase, type VtDatabase } from './db'
 import type { Attempt } from './records'
@@ -102,4 +102,67 @@ test('an older version in code never downgrades the stored unit', async () => {
   expect(units.every((u) => u.sourceVersion === 2 && u.updatedAt === NOW)).toBe(true)
   expect(await db.exercises.get('builtin:open-strings')).toBeUndefined()
   expect(await db.exercises.count()).toBe(9)
+})
+
+test('a changed melody at the same version updates the stored exercise in place', async () => {
+  await syncBuiltinUnits(db, NOW)
+  const attempt: Attempt = {
+    id: crypto.randomUUID(),
+    profileId: 'p',
+    exerciseId: builtinExerciseId('twinkle'),
+    startedAt: NOW,
+    finishedAt: NOW + 1,
+    completed: true,
+    points: 1,
+    maxPoints: 1,
+    stars: 3,
+    activeMs: 1,
+    results: [],
+  }
+  await db.attempts.add(attempt)
+
+  const fixedAbc = `X:1
+T:Twinkle (fixed)
+M:4/4
+L:1/4
+K:A
+A A e e |]`
+  const samples: SampleExercise[] = SAMPLE_EXERCISES.map((s) =>
+    s.id === 'twinkle' ? { ...s, abc: fixedAbc } : s,
+  )
+  const later = NOW + 5000
+  await syncBuiltinUnits(db, later, BUILTIN_UNITS, samples)
+
+  const twinkle = await db.exercises.get('builtin:twinkle')
+  expect(twinkle).toMatchObject({
+    id: 'builtin:twinkle',
+    unitId: 'builtin-unit:first-steps',
+    order: 4,
+    abc: fixedAbc,
+    title: 'Twinkle (fixed)',
+    createdAt: NOW,
+    updatedAt: later,
+    deletedAt: null,
+  })
+  // Nothing else changed.
+  const others = (await db.exercises.toArray()).filter((e) => e.id !== 'builtin:twinkle')
+  expect(others.every((e) => e.updatedAt === NOW)).toBe(true)
+  expect((await db.units.toArray()).every((u) => u.updatedAt === NOW && u.sourceVersion === 1)).toBe(true)
+  expect(await db.attempts.get(attempt.id)).toEqual(attempt)
+
+  // Syncing the same content again changes nothing.
+  await syncBuiltinUnits(db, later + 1000, BUILTIN_UNITS, samples)
+  expect((await db.exercises.get('builtin:twinkle'))?.updatedAt).toBe(later)
+})
+
+test('a higher stored version is never touched, even when content differs', async () => {
+  const v2 = BUILTIN_UNITS.map((u) => ({ ...u, version: 2 }))
+  await syncBuiltinUnits(db, NOW, v2)
+  const samples: SampleExercise[] = SAMPLE_EXERCISES.map((s) =>
+    s.id === 'twinkle' ? { ...s, abc: s.abc + ' ' } : s,
+  )
+  await syncBuiltinUnits(db, NOW + 1000, BUILTIN_UNITS, samples)
+  expect((await db.exercises.get('builtin:twinkle'))?.abc).toBe(
+    SAMPLE_EXERCISES.find((s) => s.id === 'twinkle')?.abc,
+  )
 })

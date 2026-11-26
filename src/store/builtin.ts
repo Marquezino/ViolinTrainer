@@ -1,5 +1,5 @@
 import { BUILTIN_UNITS, builtinExerciseId, type BuiltinUnit, type BuiltinUnitId } from '../exercises/builtin-units'
-import { SAMPLE_EXERCISES, type SampleId } from '../exercises/samples'
+import { SAMPLE_EXERCISES, type SampleExercise, type SampleId } from '../exercises/samples'
 import type { VtDatabase } from './db'
 import type { ExerciseRecord, Unit } from './records'
 
@@ -9,8 +9,11 @@ const UNIT_TITLES: Record<BuiltinUnitId, string> = {
   'traditional-tunes': 'Traditional tunes',
 }
 
-function sampleOf(id: SampleId): { title: string; abc: string } {
-  const sample = SAMPLE_EXERCISES.find((s) => s.id === id)
+function sampleOf(
+  id: SampleId,
+  samples: readonly SampleExercise[],
+): { title: string; abc: string } {
+  const sample = samples.find((s) => s.id === id)
   if (!sample) throw new Error(`unknown sample ${id}`)
   const title = /^T:(.*)$/m.exec(sample.abc)?.[1].trim() ?? id
   return { title, abc: sample.abc }
@@ -18,18 +21,33 @@ function sampleOf(id: SampleId): { title: string; abc: string } {
 
 /**
  * Inserts missing built-in units and updates in place those whose code version
- * is newer than the stored one. Exercises keep their fixed ids, so attempts,
+ * is newer than the stored one. At the same version, an exercise whose melody
+ * or title changed in code is updated in place too. A stored version higher
+ * than the code's is never touched. Exercises keep their fixed ids, so attempts,
  * unlocks and hints stay attached; dropped exercises are only soft-deleted.
  */
 export async function syncBuiltinUnits(
   db: VtDatabase,
   now: number,
   units: readonly BuiltinUnit[] = BUILTIN_UNITS,
+  samples: readonly SampleExercise[] = SAMPLE_EXERCISES,
 ): Promise<void> {
   await db.transaction('rw', db.units, db.exercises, async () => {
     for (const [order, unit] of units.entries()) {
       const stored = await db.units.get(unit.id)
-      if (stored && (stored.sourceVersion ?? 0) >= unit.version) continue
+      const storedVersion = stored?.sourceVersion ?? 0
+      if (stored && storedVersion > unit.version) continue
+      if (stored && storedVersion === unit.version) {
+        for (const sampleId of unit.exercises) {
+          const prev = await db.exercises.get(builtinExerciseId(sampleId))
+          if (!prev) continue
+          const content = sampleOf(sampleId, samples)
+          if (prev.abc !== content.abc || prev.title !== content.title) {
+            await db.exercises.put({ ...prev, ...content, updatedAt: now })
+          }
+        }
+        continue
+      }
 
       const record: Unit = {
         id: unit.id,
@@ -55,7 +73,7 @@ export async function syncBuiltinUnits(
           id,
           unitId: unit.id,
           order: index,
-          ...sampleOf(sampleId),
+          ...sampleOf(sampleId, samples),
           transpose: 0,
           createdAt: prev?.createdAt ?? now,
           updatedAt: now,
