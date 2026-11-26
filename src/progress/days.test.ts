@@ -25,3 +25,12 @@ test('daysOfWeek returns Monday..Sunday', () => {
   expect(days[0]).toBe('2026-11-23')
   expect(days[6]).toBe('2026-11-29')
 })
+
+test('tests run in America/New_York, so DST is exercised', () => {
+  expect(new Date(2026, 0, 15).getTimezoneOffset()).toBe(300)
+  expect(new Date(2026, 6, 15).getTimezoneOffset()).toBe(240)
+})
+
+test('localDay just after midnight is the new day', () => {
+  expect(localDay(new Date(2026, 10, 2, 0, 1).getTime())).toBe('2026-11-02')
+})
