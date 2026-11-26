@@ -23,7 +23,7 @@ export async function addProfile(page: Page, name: string, options: { skipTuning
 }
 
 /** Every stored attempt, read straight from IndexedDB. */
-export async function storedAttempts(page: Page): Promise<{ completed: boolean; activeMs: number; stars: number }[]> {
+export async function storedAttempts(page: Page): Promise<{ completed: boolean; activeMs: number; stars: number; finishedAt: number | null }[]> {
   return page.evaluate(
     () =>
       new Promise((resolve, reject) => {

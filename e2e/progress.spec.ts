@@ -68,6 +68,26 @@ test('leaving mid-run still counts minutes', async ({ page }) => {
     .toEqual([{ completed: false, played: true }])
 })
 
+test('the tablet going to sleep mid-run checkpoints the run while the page stays open', async ({ page }) => {
+  await addProfile(page, 'Player A')
+  await page.getByRole('button', { name: 'Open strings' }).click()
+  await page.getByRole('button', { name: 'Start' }).click()
+  await expect.poll(() => page.locator('.score .vt-green').count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(2)
+  expect(await storedAttempts(page)).toEqual([])
+
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' })
+    document.dispatchEvent(new Event('visibilitychange'))
+  })
+  await expect
+    .poll(async () =>
+      (await storedAttempts(page)).map((a) => ({ open: a.finishedAt === null, played: a.activeMs > 0 })),
+    )
+    .toEqual([{ open: true, played: true }])
+  // Still on the practice screen: nothing was closed by leaving.
+  await expect(page.getByRole('button', { name: '← Path' })).toBeVisible()
+})
+
 test('"Play again" saves the finished run and starts a new one', async ({ page }) => {
   await addProfile(page, 'Player A')
   await playOpenStringsToTheEnd(page)
