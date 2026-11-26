@@ -277,4 +277,18 @@ describe('PracticeEngine with synthetic performances', () => {
     }
     expect(sawFarOff).toBe(true)
   })
+
+  test('activeMs grows with note events and is 0 during the room check', () => {
+    const engine = new PracticeEngine(startSession(exercise('D A |]'), config, 0))
+    const frames = analyzeSignal(concat(silence(2100), note(62, 400), note(69, 400)), SAMPLE_RATE)
+    let duringCheck = true
+    for (const f of frames) {
+      engine.handleFrame(f)
+      if (engine.snapshot().phase === 'measuringNoise') duringCheck &&= engine.snapshot().activeMs === 0
+    }
+    expect(duringCheck).toBe(true)
+    const active = engine.snapshot().activeMs
+    expect(active).toBeGreaterThan(500)
+    expect(active).toBeLessThan(2000)
+  })
 })

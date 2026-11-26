@@ -9,6 +9,7 @@ import {
 } from '../analysis/note-tracker'
 import { PitchSmoother } from '../analysis/pitch-smoother'
 import { centsBetween, hzToMidiFloat, judge, midiToHz, type Judgement } from '../music/pitch'
+import { ActiveTimer } from './active-time'
 import { scoreRun, type RunResult } from './scoring'
 import { onNote, onTick, startSession, type SessionConfig, type WaitSessionState } from './wait-session'
 
@@ -40,6 +41,8 @@ export interface EngineSnapshot {
   needle: NeedleReading | null
   lastRejection: Rejection | null
   result: RunResult | null
+  /** Time spent playing since practice began, leaving out long pauses. 0 during the room check. */
+  activeMs: number
 }
 
 /** What the previous note event did, to tell a new note from an adjustment of the one still sounding. */
@@ -60,6 +63,7 @@ export class PracticeEngine {
   private lastJudged: LastJudged | null = null
   /** The equal-tempered note last accepted, until the next re-attack. */
   private acceptedMidi: number | null = null
+  private timer: ActiveTimer | null = null
   private current: EngineSnapshot
 
   constructor(session: WaitSessionState) {
@@ -73,6 +77,7 @@ export class PracticeEngine {
       needle: null,
       lastRejection: null,
       result: null,
+      activeMs: 0,
     }
   }
 
@@ -104,6 +109,7 @@ export class PracticeEngine {
     }
     this.trackerConfig = { ...DEFAULT_TRACKER_CONFIG, noiseFloorDb: floor }
     this.tracker = new NoteTracker(this.trackerConfig)
+    this.timer = new ActiveTimer(frame.timeMs)
     const session = startSession(this.current.session.exercise, this.sessionConfig, frame.timeMs)
     this.current = { ...this.current, phase: 'practicing', noiseCheckProgress: 1, noiseFloorDb: floor, session }
   }
@@ -111,9 +117,11 @@ export class PracticeEngine {
   private practice(frame: TimedFrame): void {
     const tracker = this.tracker as NoteTracker
     const trackerConfig = this.trackerConfig as TrackerConfig
+    const timer = this.timer as ActiveTimer
     let { session, lastRejection } = this.current
 
     const note = tracker.push(frame, frame.timeMs)
+    if (note) timer.noteAt(frame.timeMs)
     if (note?.reattacked) this.acceptedMidi = null
     if (note && !this.isAdjustmentOfAcceptedNote(note)) {
       const index = session.cursor
@@ -158,10 +166,11 @@ export class PracticeEngine {
         needle: null,
         lastRejection,
         result: scoreRun(session.targets, true),
+        activeMs: timer.activeMs,
       }
       return
     }
-    this.current = { ...this.current, session, needle, lastRejection }
+    this.current = { ...this.current, session, needle, lastRejection, activeMs: timer.activeMs }
   }
 
   /**
