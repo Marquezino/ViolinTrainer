@@ -145,3 +145,38 @@ test('backup export downloads a file, and importing it back restores the data', 
   await page.getByRole('button', { name: '← Players' }).click()
   await expect(page.getByRole('button', { name: 'Player A' })).toBeVisible()
 })
+
+test('after importing a backup over the same player, settings show and keep the restored values', async ({ page }) => {
+  await addProfile(page, 'Player A')
+  await page.getByRole('button', { name: '← Players' }).click()
+  await page.getByRole('button', { name: 'Settings' }).click()
+
+  const exported = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export backup' }).click()
+  const file = await (await exported).path()
+
+  const a = page.getByRole('group', { name: 'Player A' })
+  await a.getByRole('textbox', { name: 'Name' }).fill('Player Z')
+  await a.getByRole('combobox', { name: 'Daily goal (minutes)' }).selectOption('30')
+  await a.getByRole('button', { name: 'Save' }).click()
+  // The legend follows the saved name.
+  await expect(page.getByRole('group', { name: 'Player Z' }).getByText('Saved.')).toBeVisible()
+
+  await page.getByLabel('Import backup').setInputFiles(file)
+  const safetyCopy = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Replace my data' }).click()
+  await safetyCopy
+  await expect(page.getByText('Backup restored.')).toBeVisible()
+
+  const restored = page.getByRole('group', { name: 'Player A' })
+  await expect(restored.getByRole('textbox', { name: 'Name' })).toHaveValue('Player A')
+  await expect(restored.getByRole('combobox', { name: 'Daily goal (minutes)' })).toHaveValue('10')
+  await restored.getByRole('button', { name: 'Save' }).click()
+  await expect(restored.getByText('Saved.')).toBeVisible()
+
+  await page.reload()
+  await page.getByRole('button', { name: 'Settings' }).click()
+  const reloaded = page.getByRole('group', { name: 'Player A' })
+  await expect(reloaded.getByRole('textbox', { name: 'Name' })).toHaveValue('Player A')
+  await expect(reloaded.getByRole('combobox', { name: 'Daily goal (minutes)' })).toHaveValue('10')
+})

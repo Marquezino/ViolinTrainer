@@ -55,14 +55,18 @@ export function SettingsScreen(props: { onBack: () => void; onTryAbc: () => void
   const { onBack, onTryAbc } = props
   const { t } = useI18n()
   const db = useDb()
+  // Forms copy their values once, so a restore remounts them. Their key is the restore round the
+  // loaded data belongs to: keyed on the counter alone, they would remount before the query
+  // re-ran and copy the old values again.
+  const [restores, setRestores] = useState(0)
   const data = useLiveQuery(async () => {
     const [profiles, goals, settings] = await Promise.all([
       listProfiles(db),
       db.goalSettings.toArray(),
       db.settings.get('app'),
     ])
-    return { profiles, goals, settings }
-  }, [db])
+    return { profiles, goals, settings, round: restores }
+  }, [db, restores])
   if (!data) return null
   const today = localDay(Date.now())
 
@@ -79,7 +83,7 @@ export function SettingsScreen(props: { onBack: () => void; onTryAbc: () => void
         <h2>{t.settings.playersHeading}</h2>
         {data.profiles.map((profile) => (
           <ProfileForm
-            key={profile.id}
+            key={`${profile.id}:${data.round}`}
             profile={profile}
             goalMinutes={goalMinutesOn(
               data.goals.filter((g) => g.profileId === profile.id),
@@ -90,9 +94,9 @@ export function SettingsScreen(props: { onBack: () => void; onTryAbc: () => void
         <AddProfileForm used={data.profiles.map((p) => p.avatar)} />
       </section>
 
-      {data.settings && <A4Form a4Hz={data.settings.a4Hz} />}
+      {data.settings && <A4Form key={data.round} a4Hz={data.settings.a4Hz} />}
 
-      <BackupSection />
+      <BackupSection onRestored={() => setRestores((n) => n + 1)} />
 
       <section>
         <h2>{t.settings.otherHeading}</h2>
@@ -326,7 +330,7 @@ type ImportState =
   | { step: 'restored' }
   | { step: 'failed' }
 
-function BackupSection() {
+function BackupSection({ onRestored }: { onRestored: () => void }) {
   const { t, format } = useI18n()
   const db = useDb()
   const [state, setState] = useState<ImportState>({ step: 'idle' })
@@ -344,6 +348,7 @@ function BackupSection() {
       await downloadBackup(db)
       await replaceWithBackup(db, backup)
       setState({ step: 'restored' })
+      onRestored()
     } catch (e) {
       console.error('Restoring the backup failed', e)
       setState({ step: 'failed' })
