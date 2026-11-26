@@ -70,6 +70,8 @@ export function useRunRecorder(params: RunRecorderParams): void {
       document.removeEventListener('visibilitychange', onVisibility)
       // The player left: keep what was played so far.
       closeCurrent(run.current)
+      // A remount (Fast Refresh, StrictMode) starts a fresh run.
+      run.current = null
     }
   }, [])
 }

@@ -75,6 +75,13 @@ test('closeRun twice updates hint states once', async () => {
   expect(await db.attempts.count()).toBe(1)
 })
 
+test('two closes at once still update hint states once', async () => {
+  const done = attempt(snapshot([green, green, green], 30_000, 'finished'), START + 40_000)
+  await Promise.all([closeRun(db, done, exercise), closeRun(db, done, exercise)])
+  expect((await db.hintStates.get(['p', noteKey(69, A4)]))?.consecutiveFirstTryGreens).toBe(1)
+  expect(await db.attempts.count()).toBe(1)
+})
+
 test('checkpoint then close: the closed record wins and a later checkpoint is ignored', async () => {
   await checkpointRun(db, attempt(snapshot([green], 5_000), null))
   expect((await db.attempts.get('run-1'))?.activeMs).toBe(5_000)

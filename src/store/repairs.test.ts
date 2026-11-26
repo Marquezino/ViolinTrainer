@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, expect, test } from 'vitest'
 import type { Day } from '../progress/days'
-import { notesBalance } from '../progress/notes'
+import { notesBalance, repairOffers } from '../progress/notes'
 import { bestStars, bestStarsSum } from '../progress/unlocking'
 import { openDatabase, type VtDatabase } from './db'
 import { loadHistory } from './history'
@@ -75,4 +75,48 @@ test('repairStreak refuses when there is no offer or not enough notes, and write
   // The same repair a second time: the offer is gone.
   await expect(repairStreak(db, 'p', 'easy', NOW)).rejects.toThrow('noOffer')
   expect(await db.streakRepairs.count()).toBe(1)
+})
+
+// Both offers look affordable against 43 ♪ (10 from goal days, 33 from eleven
+// 3-star exercises), but the balance covers only one of them.
+async function seedBoth() {
+  await db.attempts.bulkAdd([
+    run('a', '2026-11-20', 10, 3),
+    run('b', '2026-11-23', 10, 3),
+    ...'cdefghijk'.split('').map((id) => run(id, '2026-11-23', 0, 3)),
+  ])
+}
+
+test('two offers that each look affordable: paying one rechecks the other', async () => {
+  await seedBoth()
+  expect(await balance()).toBe(43)
+  const h = await loadHistory(db, 'p')
+  const offers = repairOffers(h, bestStarsSum(bestStars(h.attempts)), '2026-11-27')
+  expect(offers.map((o) => [o.streak, o.affordable])).toEqual([
+    ['practice', true],
+    ['easy', true],
+  ])
+
+  await repairStreak(db, 'p', 'practice', NOW)
+  // The practice repair covered the easy streak for free: that offer is gone.
+  await expect(repairStreak(db, 'p', 'easy', NOW)).rejects.toThrow('noOffer')
+  expect(await balance()).toBe(3)
+})
+
+test('paying the easy offer first leaves too little for the practice one', async () => {
+  await seedBoth()
+  await repairStreak(db, 'p', 'easy', NOW)
+  await expect(repairStreak(db, 'p', 'practice', NOW)).rejects.toThrow('notAffordable')
+  expect(await balance()).toBe(23)
+  expect(await db.streakRepairs.count()).toBe(1)
+})
+
+test('two repairs at once: only what the balance covers is taken', async () => {
+  await seedBoth()
+  const results = await Promise.allSettled([
+    repairStreak(db, 'p', 'easy', NOW),
+    repairStreak(db, 'p', 'practice', NOW),
+  ])
+  expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+  expect(await balance()).toBeGreaterThanOrEqual(0)
 })
