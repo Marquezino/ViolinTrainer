@@ -167,6 +167,22 @@ export const en: Messages = {
     tryAbc: 'Try your own ABC',
   },
 
+  help: {
+    label: (field) => `Help: ${field}`,
+    newPlayer:
+      'Each player has their own path, streaks and settings. After adding one, set the daily goal and tolerances in their own box.',
+    goal: "Minutes of actual playing per day that count for the goal streak. Pauses of 30 seconds or more don't count.",
+    greenCents: 'Notes within this many cents of the right pitch count as in tune and turn green.',
+    yellowCents:
+      'A little further off, the note turns yellow: it is accepted but worth fewer points. Beyond this, it must be played again.',
+    centsQuestion: 'What is a cent?',
+    cents: 'A cent is a hundredth of a semitone, so 50 cents is halfway to the next note. Smaller values are stricter.',
+    skipTuning: 'Hides the tuning screen shown before each exercise.',
+    a4: 'The pitch the app tunes to, normally 440 Hz. Change it only if your teacher or piano uses another one.',
+    backup:
+      'Export saves every player and all progress in a file. Import replaces the data in this browser with such a file, for example on a new device.',
+  },
+
   backup: {
     heading: 'Backup',
     export: 'Export backup',

@@ -740,3 +740,93 @@ input[type='number'] {
 .backup-reminder button {
   min-height: 48px;
 }
+
+/* Help tips: a round "?" with a 48 px tap target, and its hint */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label,
+.with-help {
+  display: flex;
+  align-items: center;
+}
+
+/* As tall as the help button, so labels with and without one line up. */
+.field-label {
+  min-height: 48px;
+}
+
+.help-tip {
+  position: relative;
+  display: inline-flex;
+}
+
+button.help-tip-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.help-tip-button:focus-visible {
+  outline: 3px solid var(--current);
+  outline-offset: -4px;
+}
+
+.help-tip-circle {
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}
+
+.help-tip-text {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  left: 50%;
+  transform: translateX(calc(-50% + var(--shift, 0px)));
+  width: max-content;
+  max-width: min(300px, calc(100vw - 16px));
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.9rem;
+  font-weight: normal;
+  line-height: 1.35;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.help-tip-text[hidden] {
+  display: none;
+}
+
+.with-help h2 {
+  margin: 0;
+}
+
+div.with-help {
+  margin: 20px 0 12px;
+}
+
+.cents-question {
+  margin: 0;
+  color: var(--muted);
+}

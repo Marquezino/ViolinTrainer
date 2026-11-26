@@ -26,6 +26,7 @@ import type { Avatar, Profile } from '../store/records'
 import { AVATAR_SYMBOLS, AVATARS } from './Avatar'
 import { useDb } from './DbProvider'
 import { downloadBackup } from './download-backup'
+import { Field, HelpTip } from './HelpTip'
 import { LanguageMenu } from './LanguageMenu'
 
 export const A4_MIN = 415
@@ -96,16 +97,17 @@ export function SettingsScreen(props: { onBack: () => void; onTryAbc: () => void
 function AvatarSelect(props: { value: Avatar; onChange: (a: Avatar) => void }) {
   const { t } = useI18n()
   return (
-    <label>
-      {t.settings.avatar}
-      <select value={props.value} onChange={(e) => props.onChange(e.target.value as Avatar)}>
-        {AVATARS.map((a) => (
-          <option key={a} value={a}>
-            {AVATAR_SYMBOLS[a]} {t.profiles.avatars[a]}
-          </option>
-        ))}
-      </select>
-    </label>
+    <Field label={t.settings.avatar}>
+      {(id) => (
+        <select id={id} value={props.value} onChange={(e) => props.onChange(e.target.value as Avatar)}>
+          {AVATARS.map((a) => (
+            <option key={a} value={a}>
+              {AVATAR_SYMBOLS[a]} {t.profiles.avatars[a]}
+            </option>
+          ))}
+        </select>
+      )}
+    </Field>
   )
 }
 
@@ -135,10 +137,9 @@ function AddProfileForm({ used }: { used: Avatar[] }) {
         void createProfile(db, { name: trimmed, avatar: shown, locale }, Date.now())
       }}
     >
-      <label>
-        {t.settings.newPlayerName}
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
-      </label>
+      <Field label={t.settings.newPlayerName} help={t.help.newPlayer}>
+        {(id) => <input id={id} type="text" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />}
+      </Field>
       <AvatarSelect value={shown} onChange={setAvatar} />
       <button type="submit" className="primary">
         {t.settings.addPlayer}
@@ -201,33 +202,42 @@ function ProfileForm({ profile, goalMinutes }: { profile: Profile; goalMinutes: 
         }}
         onChange={() => setSaved(false)}
       >
-        <label>
-          {t.settings.name}
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
-        </label>
+        <Field label={t.settings.name}>
+          {(id) => <input id={id} type="text" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />}
+        </Field>
         <AvatarSelect value={avatar} onChange={setAvatar} />
-        <label>
-          {t.settings.goal}
-          <select value={goal} onChange={(e) => setGoalValue(Number(e.target.value))}>
-            {GOAL_CHOICES.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          {t.settings.greenCents}
-          <input type="number" min={1} max={49} step={1} value={green} onChange={(e) => setGreen(e.target.value)} />
-        </label>
-        <label>
-          {t.settings.yellowCents}
-          <input type="number" min={1} max={49} step={1} value={yellow} onChange={(e) => setYellow(e.target.value)} />
-        </label>
-        <label className="checkbox">
-          <input type="checkbox" checked={skipTuning} onChange={(e) => setSkipTuning(e.target.checked)} />
-          {t.settings.skipTuning}
-        </label>
+        <Field label={t.settings.goal} help={t.help.goal}>
+          {(id) => (
+            <select id={id} value={goal} onChange={(e) => setGoalValue(Number(e.target.value))}>
+              {GOAL_CHOICES.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
+        <Field label={t.settings.greenCents} help={t.help.greenCents}>
+          {(id) => (
+            <input id={id} type="number" min={1} max={49} step={1} value={green} onChange={(e) => setGreen(e.target.value)} />
+          )}
+        </Field>
+        <Field label={t.settings.yellowCents} help={t.help.yellowCents}>
+          {(id) => (
+            <input id={id} type="number" min={1} max={49} step={1} value={yellow} onChange={(e) => setYellow(e.target.value)} />
+          )}
+        </Field>
+        <p className="with-help cents-question">
+          {t.help.centsQuestion}
+          <HelpTip label={t.help.centsQuestion} text={t.help.cents} />
+        </p>
+        <span className="with-help">
+          <label className="checkbox">
+            <input type="checkbox" checked={skipTuning} onChange={(e) => setSkipTuning(e.target.checked)} />
+            {t.settings.skipTuning}
+          </label>
+          <HelpTip label={t.settings.skipTuning} text={t.help.skipTuning} />
+        </span>
         <div className="actions">
           <button type="submit" className="primary">
             {t.settings.save}
@@ -279,20 +289,22 @@ function A4Form({ a4Hz }: { a4Hz: number }) {
           if (ok) void updateSettings(db, { a4Hz: hz }).then(() => setSaved(true))
         }}
       >
-        <label>
-          {t.settings.a4Label}
-          <input
-            type="number"
-            min={A4_MIN}
-            max={A4_MAX}
-            step={1}
-            value={value}
-            onChange={(e) => {
-              setValue(e.target.value)
-              setSaved(false)
-            }}
-          />
-        </label>
+        <Field label={t.settings.a4Label} help={t.help.a4}>
+          {(id) => (
+            <input
+              id={id}
+              type="number"
+              min={A4_MIN}
+              max={A4_MAX}
+              step={1}
+              value={value}
+              onChange={(e) => {
+                setValue(e.target.value)
+                setSaved(false)
+              }}
+            />
+          )}
+        </Field>
         <button type="submit" className="primary">
           {t.settings.save}
         </button>
@@ -342,7 +354,10 @@ function BackupSection({ onRestored }: { onRestored: () => void }) {
 
   return (
     <section>
-      <h2>{t.backup.heading}</h2>
+      <div className="with-help">
+        <h2>{t.backup.heading}</h2>
+        <HelpTip label={t.backup.heading} text={t.help.backup} />
+      </div>
       <p>
         <button
           type="button"

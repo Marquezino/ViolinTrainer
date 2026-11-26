@@ -183,6 +183,22 @@ export interface Messages {
     tryAbc: string
   }
 
+  /** The round "?" help tips in settings: one or two short sentences each. */
+  help: {
+    /** Accessible name of a help button; `field` is the label it explains. */
+    label: (field: string) => string
+    newPlayer: string
+    goal: string
+    greenCents: string
+    yellowCents: string
+    /** Visible question next to the tolerances, with the cents help. */
+    centsQuestion: string
+    cents: string
+    skipTuning: string
+    a4: string
+    backup: string
+  }
+
   backup: {
     heading: string
     export: string

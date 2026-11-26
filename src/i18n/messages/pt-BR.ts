@@ -170,6 +170,22 @@ export const ptBR: Messages = {
     tryAbc: 'Experimentar seu próprio ABC',
   },
 
+  help: {
+    label: (field) => `Ajuda: ${field}`,
+    newPlayer:
+      'Cada jogador tem seu próprio caminho, sequências e configurações. Depois de adicionar, ajuste a meta diária e as tolerâncias no quadro dele.',
+    goal: 'Quantos minutos tocando de verdade por dia valem para a sequência de metas. Pausas de 30 segundos ou mais ficam de fora.',
+    greenCents: 'Se a nota ficar até essa quantidade de cents do tom certo, ela conta como afinada e fica verde.',
+    yellowCents:
+      'Um pouco mais longe, a nota fica amarela: vale, mas rende menos pontos. Passou disso, é preciso tocar de novo.',
+    centsQuestion: 'O que é um cent?',
+    cents: 'Um cent é um centésimo de semitom: 50 cents é meio caminho até a nota vizinha. Quanto menor o número, mais exigente.',
+    skipTuning: 'Esconde a tela de afinação que aparece antes de cada exercício.',
+    a4: 'A nota que o app usa como referência para afinar, normalmente 440 Hz. Só mude se o professor ou o piano usar outra.',
+    backup:
+      'Exportar guarda todos os jogadores e o progresso num arquivo. Importar troca os dados deste navegador pelos de um arquivo desses, por exemplo num aparelho novo.',
+  },
+
   backup: {
     heading: 'Backup',
     export: 'Exportar backup',
