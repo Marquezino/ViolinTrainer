@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, expect, test } from 'vitest'
 import { localDay } from '../progress/days'
+import { goalMinutesOn } from '../progress/history'
 import { openDatabase, type VtDatabase } from './db'
 import {
   createProfile,
@@ -63,14 +64,15 @@ test('setGoal rejects values outside 5..60 or off the 5-minute step', async () =
   await setGoal(db, p.id, 60, day, NOW)
 })
 
-test('setGoal twice on one day keeps one setting for that day', async () => {
+test('setGoal twice on one day keeps both dated records, and the later one is in force', async () => {
   const p = await createProfile(db, input, NOW)
   const day = '2026-06-11'
   await setGoal(db, p.id, 15, day, NOW)
   await setGoal(db, p.id, 20, day, NOW + 1)
-  const rows = (await db.goalSettings.where('profileId').equals(p.id).toArray()).filter((g) => g.fromDay === day)
-  expect(rows).toHaveLength(1)
-  expect(rows[0].minutes).toBe(20)
+  const goals = await db.goalSettings.where('profileId').equals(p.id).toArray()
+  const rows = goals.filter((g) => g.fromDay === day)
+  expect(rows.map((g) => g.minutes).sort()).toEqual([15, 20])
+  expect(goalMinutesOn(goals, day)).toBe(20)
 })
 
 test('getSettings creates defaults once', async () => {

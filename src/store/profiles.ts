@@ -103,12 +103,7 @@ export async function setGoal(
   if (!Number.isInteger(minutes) || minutes < GOAL_MIN || minutes > GOAL_MAX || minutes % GOAL_STEP !== 0) {
     throw new RangeError(`Goal must be ${GOAL_MIN} to ${GOAL_MAX} minutes in steps of ${GOAL_STEP}`)
   }
-  await db.transaction('rw', db.goalSettings, async () => {
-    // fromDay stays unique per profile: a second change today replaces today's.
-    const sameDay = (await db.goalSettings.where('profileId').equals(profileId).toArray()).filter(
-      (g) => g.fromDay === today,
-    )
-    await db.goalSettings.bulkDelete(sameDay.map((g) => g.id))
-    await db.goalSettings.add({ id: crypto.randomUUID(), profileId, minutes, fromDay: today, createdAt: now })
-  })
+  // Dated, append-only records (§4.2): a second change today adds a row, and
+  // goalMinutesOn prefers the newest createdAt on the same day.
+  await db.goalSettings.add({ id: crypto.randomUUID(), profileId, minutes, fromDay: today, createdAt: now })
 }
