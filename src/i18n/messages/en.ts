@@ -169,6 +169,10 @@ export const en: Messages = {
     heading: 'Backup',
     export: 'Export backup',
     import: 'Import backup',
+    reminderLabel: 'Backup reminder',
+    lastBackupNever: 'Last backup: never',
+    lastBackupDaysAgo: (days, f) => `Last backup: ${count(days, 'day', 'days', f)} ago`,
+    reminderDismiss: 'Not now',
     problems: {
       notJson: 'This file cannot be read: it is not a backup, or it is damaged.',
       notABackup: 'This file is not a Violin Trainer backup.',

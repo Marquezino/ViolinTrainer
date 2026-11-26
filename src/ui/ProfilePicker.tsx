@@ -6,6 +6,7 @@ import { loadHistory } from '../store/history'
 import { listProfiles } from '../store/profiles'
 import type { Profile } from '../store/records'
 import { AvatarIcon } from './Avatar'
+import { BackupReminder } from './BackupReminder'
 import { useDb } from './DbProvider'
 import { StreakBadges } from './StreakBadges'
 
@@ -32,7 +33,7 @@ export function ProfilePicker(props: { onChoose: (profile: Profile) => void; onS
           {t.profiles.settings}
         </button>
       </header>
-      {/* Task 14 puts the backup reminder here, above the cards. */}
+      <BackupReminder />
       {cards && cards.length === 0 && (
         <p className="picker-empty">
           <button type="button" className="primary big" onClick={onSettings}>

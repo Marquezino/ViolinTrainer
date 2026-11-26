@@ -185,6 +185,10 @@ export interface Messages {
     heading: string
     export: string
     import: string
+    reminderLabel: string
+    lastBackupNever: string
+    lastBackupDaysAgo: (days: number, f: Formatters) => string
+    reminderDismiss: string
     problems: Record<BackupProblem, string>
     confirm: (profiles: number, attempts: number, f: Formatters) => string
     replace: string

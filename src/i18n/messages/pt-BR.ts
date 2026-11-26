@@ -171,6 +171,10 @@ export const ptBR: Messages = {
     heading: 'Backup',
     export: 'Exportar backup',
     import: 'Importar backup',
+    reminderLabel: 'Lembrete de backup',
+    lastBackupNever: 'Último backup: nunca',
+    lastBackupDaysAgo: (days, f) => `Último backup: há ${count(days, 'dia', 'dias', f)}`,
+    reminderDismiss: 'Agora não',
     problems: {
       notJson: 'Não foi possível ler este arquivo: ele não é um backup ou está danificado.',
       notABackup: 'Este arquivo não é um backup do Violin Trainer.',

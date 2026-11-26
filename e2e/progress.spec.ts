@@ -240,3 +240,37 @@ test('tuning screen appears before practice and can be skipped for next time', a
   expect(await storedAttempts(page)).toEqual([])
   expect(errors).toEqual([])
 })
+
+test('the manifest is served and linked', async ({ page, request }) => {
+  await page.goto('/')
+  const href = await page.locator('link[rel="manifest"]').getAttribute('href')
+  expect(href).toBeTruthy()
+  const response = await request.get(new URL(href!, page.url()).toString())
+  expect(response.status()).toBe(200)
+  expect((await response.json()).display).toBe('standalone')
+})
+
+test('backup reminder appears after a run with no backup, and dismissing hides it', async ({ page }) => {
+  await addProfile(page, 'Player A')
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Player A' })).toBeVisible()
+  await expect(page.getByText(/Last backup/)).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Player A' }).click()
+  await playOpenStringsToTheEnd(page)
+  await page.reload()
+
+  const reminder = page.getByRole('region', { name: 'Backup reminder' })
+  await expect(reminder).toContainText('Last backup: never')
+  await expect(reminder.getByRole('button', { name: 'Export backup' })).toBeVisible()
+  // The reminder sits above the cards and never covers them.
+  const box = await reminder.boundingBox()
+  const card = await page.getByRole('button', { name: 'Player A' }).boundingBox()
+  expect(box!.y + box!.height).toBeLessThanOrEqual(card!.y)
+
+  await reminder.getByRole('button', { name: 'Not now' }).click()
+  await expect(reminder).toHaveCount(0)
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Player A' })).toBeVisible()
+  await expect(page.getByText(/Last backup/)).toHaveCount(0)
+})

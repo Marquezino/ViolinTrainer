@@ -5,14 +5,11 @@ import { validateTolerances, type ToleranceProblem } from '../music/pitch'
 import { localDay } from '../progress/days'
 import { goalMinutesOn } from '../progress/history'
 import {
-  backupFileName,
-  exportBackup,
   parseBackup,
   replaceWithBackup,
   type BackupFile,
   type BackupProblem,
 } from '../store/backup'
-import type { VtDatabase } from '../store/db'
 import { persistenceStatus, type PersistenceStatus } from '../store/persistence'
 import {
   createProfile,
@@ -28,28 +25,13 @@ import {
 import type { Avatar, Profile } from '../store/records'
 import { AVATAR_SYMBOLS, AVATARS } from './Avatar'
 import { useDb } from './DbProvider'
+import { downloadBackup } from './download-backup'
 
 export const A4_MIN = 415
 export const A4_MAX = 466
 
 const GOAL_CHOICES: number[] = []
 for (let m = GOAL_MIN; m <= GOAL_MAX; m += GOAL_STEP) GOAL_CHOICES.push(m)
-
-/** Saves a file through an object URL and a temporary link. */
-function downloadJson(name: string, data: unknown): void {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }))
-  const link = document.createElement('a')
-  link.href = url
-  link.download = name
-  link.click()
-  // Revoked later: some browsers start reading the URL only after click() returns.
-  setTimeout(() => URL.revokeObjectURL(url), 10_000)
-}
-
-async function downloadBackup(db: VtDatabase): Promise<void> {
-  const now = Date.now()
-  downloadJson(backupFileName(now), await exportBackup(db, now))
-}
 
 export function SettingsScreen(props: { onBack: () => void; onTryAbc: () => void }) {
   const { onBack, onTryAbc } = props
