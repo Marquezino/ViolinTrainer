@@ -39,6 +39,10 @@ export interface GoalSetting {
 export interface Settings {
   id: 'app'
   a4Hz: number
+  /**
+   * Reserved for later: written on each closed run, but nothing reads it yet.
+   * The picker's language still comes from the saved locale.
+   */
   lastProfileId: string | null
   lastBackupAt: number | null
   backupReminderDismissedAt: number | null
