@@ -186,6 +186,7 @@ export const en: Messages = {
     cancel: 'Cancel',
     restored: 'Backup restored.',
     failed: 'The backup could not be restored. Your data was not changed.',
+    exportFailed: 'The backup could not be saved. Try again.',
   },
 
   storage: {

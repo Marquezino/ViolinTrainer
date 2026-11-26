@@ -50,7 +50,7 @@ export function BackupReminder() {
       </button>
       {failed && (
         <p className="errors" role="alert">
-          {t.backup.failed}
+          {t.backup.exportFailed}
         </p>
       )}
     </section>

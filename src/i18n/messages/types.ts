@@ -197,6 +197,8 @@ export interface Messages {
     cancel: string
     restored: string
     failed: string
+    /** Shown when an export could not be saved. */
+    exportFailed: string
   }
 
   storage: {

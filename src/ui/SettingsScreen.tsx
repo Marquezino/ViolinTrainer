@@ -311,6 +311,7 @@ type ImportState =
   | { step: 'confirm'; backup: BackupFile; profiles: number; attempts: number }
   | { step: 'restored' }
   | { step: 'failed' }
+  | { step: 'exportFailed' }
 
 function BackupSection({ onRestored }: { onRestored: () => void }) {
   const { t, format } = useI18n()
@@ -347,7 +348,7 @@ function BackupSection({ onRestored }: { onRestored: () => void }) {
             setState({ step: 'idle' })
             downloadBackup(db).catch((e: unknown) => {
               console.error('Exporting the backup failed', e)
-              setState({ step: 'failed' })
+              setState({ step: 'exportFailed' })
             })
           }}
         >
@@ -386,6 +387,11 @@ function BackupSection({ onRestored }: { onRestored: () => void }) {
       {state.step === 'failed' && (
         <p className="errors" role="alert">
           {t.backup.failed}
+        </p>
+      )}
+      {state.step === 'exportFailed' && (
+        <p className="errors" role="alert">
+          {t.backup.exportFailed}
         </p>
       )}
     </section>

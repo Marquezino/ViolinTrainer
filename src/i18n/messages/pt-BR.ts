@@ -189,6 +189,7 @@ export const ptBR: Messages = {
     cancel: 'Cancelar',
     restored: 'Backup restaurado.',
     failed: 'Não foi possível restaurar o backup. Seus dados não foram alterados.',
+    exportFailed: 'Não foi possível salvar o backup. Tente de novo.',
   },
 
   storage: {
