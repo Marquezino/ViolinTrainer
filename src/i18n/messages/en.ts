@@ -4,6 +4,12 @@ import type { Formatters, Messages } from './types'
 const count = (n: number, one: string, other: string, f: Formatters) =>
   `${f.number(n)} ${f.plural(n) === 'one' ? one : other}`
 const at = (offset: number, f: Formatters) => `at character ${f.number(offset)}`
+/** Practice time as m:ss, rounded down: a few seconds already show. */
+const clock = (ms: number) => {
+  const s = Math.floor(ms / 1000)
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+const STREAK_NAMES = { easy: 'playing streak', practice: 'goal streak' } as const
 
 export const en: Messages = {
   appName: 'Violin Trainer',
@@ -12,7 +18,7 @@ export const en: Messages = {
   untitled: 'Untitled',
 
   picker: {
-    exercisesHeading: 'Exercises',
+    back: '← Settings',
     ownAbcHeading: 'Your own ABC',
     starterTitle: 'My exercise',
     abcLabel: 'ABC notation',
@@ -21,7 +27,11 @@ export const en: Messages = {
   },
 
   practice: {
-    back: '← Exercises',
+    back: '← Back',
+    backToPath: '← Path',
+    backToPathButton: 'Back to path',
+    goalReached: "Today's goal reached! 🎉 Keep going if you like.",
+    today: (ms, goal, f) => `Today: ${clock(ms)} of ${f.number(goal)} min`,
     startPrompt: 'When you press Start, stay quiet for two seconds while the app listens to the room.',
     start: 'Start',
     tryAgain: 'Try again',
@@ -47,6 +57,116 @@ export const en: Messages = {
     inTune: 'In tune',
     flatLabel: 'flat',
     sharpLabel: 'sharp',
+  },
+
+  profiles: {
+    heading: "Who's practising?",
+    addFirst: 'Add the first player',
+    settings: '⚙ Settings',
+    avatars: {
+      violin: 'violin',
+      note: 'musical note',
+      clef: 'score',
+      star: 'star',
+      sun: 'sun',
+      moon: 'moon',
+      bird: 'bird',
+      cat: 'cat',
+      dog: 'dog',
+      flower: 'flower',
+      tree: 'tree',
+      heart: 'heart',
+    },
+  },
+
+  path: {
+    back: '← Players',
+    todayTime: (ms, goal, f) => `${clock(ms)} of ${f.number(goal)} min`,
+    goalRingLabel: (ms, goal, f) => `Today's practice: ${clock(ms)} of ${count(goal, 'minute', 'minutes', f)}`,
+    weekLabel: (days, f) => `Goal reached on ${count(days, 'day', 'days', f)} this week`,
+    locked: 'Locked',
+    next: 'Next',
+    empty: 'There are no exercises yet. Ask a grown-up to add some in the settings.',
+    brokenExercise: 'This exercise cannot be played: its music has a writing error.',
+  },
+
+  streaks: {
+    names: STREAK_NAMES,
+    label: (streak, days, f) => `${streak === 'easy' ? 'Playing streak' : 'Goal streak'}: ${count(days, 'day', 'days', f)}`,
+  },
+
+  notes: {
+    balanceLabel: (n, f) => `${count(n, 'note', 'notes', f)} for repairing streaks`,
+    broke: (streak) => `Your ${STREAK_NAMES[streak]} broke yesterday.`,
+    repairOffer: (restores, icon, cost, f) => `Repair to ${f.number(restores)} ${icon} for ${f.number(cost)} ♪`,
+    missing: (n, f) => `You need ${count(n, 'more note', 'more notes', f)}.`,
+    confirm: (cost, f) => `Spend ${f.number(cost)} ♪ to repair yesterday? This can't be undone.`,
+    confirmYes: 'Yes, repair',
+    cancel: 'Cancel',
+    errors: {
+      noOffer: 'This repair is no longer available.',
+      notAffordable: 'There are not enough notes for this repair.',
+      other: 'The repair could not be saved. Try again.',
+    },
+  },
+
+  celebrations: {
+    goalReached: "You reached today's goal! 🎉",
+    streakMilestone: (streak, days, f) => `${count(days, 'day', 'days', f)} ${STREAK_NAMES[streak]}! 🔥`,
+    newBestStars: (stars, f) => `New best: ${count(stars, 'star', 'stars', f)}!`,
+    dismiss: 'Close',
+  },
+
+  settings: {
+    heading: 'Settings',
+    back: '← Players',
+    playersHeading: 'Players',
+    newPlayerName: 'New player name',
+    avatar: 'Picture',
+    addPlayer: 'Add player',
+    nameRequired: 'Type a name first.',
+    name: 'Name',
+    goal: 'Daily goal (minutes)',
+    greenCents: 'Green (cents)',
+    yellowCents: 'Yellow (cents)',
+    skipTuning: 'Skip the tuning screen',
+    save: 'Save',
+    saved: 'Saved.',
+    deletePlayer: 'Delete player',
+    deleteConfirm: (name) => `Delete ${name}? They disappear from the list; their runs stay in the data and in backups.`,
+    deleteYes: 'Yes, delete',
+    cancel: 'Cancel',
+    a4Heading: 'Tuning reference',
+    a4Label: 'A4 (Hz)',
+    a4Problem: (min, max, f) => `A4 must be between ${f.number(min)} and ${f.number(max)} Hz.`,
+    otherHeading: 'Other',
+    tryAbc: 'Try your own ABC',
+  },
+
+  backup: {
+    heading: 'Backup',
+    export: 'Export backup',
+    import: 'Import backup',
+    problems: {
+      notJson: 'This file cannot be read: it is not a backup, or it is damaged.',
+      notABackup: 'This file is not a Violin Trainer backup.',
+      newerVersion: 'This backup comes from a newer version of the app. Update the app, then import it.',
+    },
+    confirm: (profiles, attempts, f) =>
+      `This backup has ${count(profiles, 'player', 'players', f)} and ${count(attempts, 'run', 'runs', f)}. Importing it replaces all the data in this browser; a copy of the current data is downloaded first.`,
+    replace: 'Replace my data',
+    cancel: 'Cancel',
+    restored: 'Backup restored.',
+    failed: 'The backup could not be restored. Your data was not changed.',
+  },
+
+  storage: {
+    notSaved: "This window can't save progress (private browsing?). Practice works, but nothing is kept after it closes.",
+    persistence: {
+      granted: 'This browser keeps the data.',
+      denied: 'This browser may clear the data: install the app or export backups often.',
+      unsupported: 'This browser may clear the data: export backups often.',
+    },
   },
 
   microphoneErrors: {

@@ -4,6 +4,12 @@ import type { Formatters, Messages } from './types'
 const count = (n: number, one: string, other: string, f: Formatters) =>
   `${f.number(n)} ${f.plural(n) === 'one' ? one : other}`
 const at = (offset: number, f: Formatters) => `no caractere ${f.number(offset)}`
+/** Tempo de prática como m:ss, arredondado para baixo. */
+const clock = (ms: number) => {
+  const s = Math.floor(ms / 1000)
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+const STREAK_NAMES = { easy: 'sequência de dias tocando', practice: 'sequência de metas' } as const
 
 export const ptBR: Messages = {
   appName: 'Violin Trainer',
@@ -12,7 +18,7 @@ export const ptBR: Messages = {
   untitled: 'Sem título',
 
   picker: {
-    exercisesHeading: 'Exercícios',
+    back: '← Configurações',
     ownAbcHeading: 'Seu próprio ABC',
     starterTitle: 'Meu exercício',
     abcLabel: 'Notação ABC',
@@ -21,7 +27,11 @@ export const ptBR: Messages = {
   },
 
   practice: {
-    back: '← Exercícios',
+    back: '← Voltar',
+    backToPath: '← Trilha',
+    backToPathButton: 'Voltar para a trilha',
+    goalReached: 'Meta de hoje alcançada! 🎉 Continue se quiser.',
+    today: (ms, goal, f) => `Hoje: ${clock(ms)} de ${f.number(goal)} min`,
     startPrompt: 'Quando você apertar Começar, fique em silêncio por dois segundos enquanto o app escuta a sala.',
     start: 'Começar',
     tryAgain: 'Tentar de novo',
@@ -48,6 +58,118 @@ export const ptBR: Messages = {
     inTune: 'Afinado',
     flatLabel: 'abaixo',
     sharpLabel: 'acima',
+  },
+
+  profiles: {
+    heading: 'Quem vai praticar?',
+    addFirst: 'Adicionar o primeiro jogador',
+    settings: '⚙ Configurações',
+    avatars: {
+      violin: 'violino',
+      note: 'nota musical',
+      clef: 'partitura',
+      star: 'estrela',
+      sun: 'sol',
+      moon: 'lua',
+      bird: 'passarinho',
+      cat: 'gato',
+      dog: 'cachorro',
+      flower: 'flor',
+      tree: 'árvore',
+      heart: 'coração',
+    },
+  },
+
+  path: {
+    back: '← Jogadores',
+    todayTime: (ms, goal, f) => `${clock(ms)} de ${f.number(goal)} min`,
+    goalRingLabel: (ms, goal, f) => `Prática de hoje: ${clock(ms)} de ${count(goal, 'minuto', 'minutos', f)}`,
+    weekLabel: (days, f) => `Meta alcançada em ${count(days, 'dia', 'dias', f)} nesta semana`,
+    locked: 'Bloqueado',
+    next: 'Próximo',
+    empty: 'Ainda não há exercícios. Peça a um adulto para adicionar alguns nas configurações.',
+    brokenExercise: 'Este exercício não pode ser tocado: a música tem um erro de escrita.',
+  },
+
+  streaks: {
+    names: STREAK_NAMES,
+    label: (streak, days, f) =>
+      `${streak === 'easy' ? 'Sequência de dias tocando' : 'Sequência de metas'}: ${count(days, 'dia', 'dias', f)}`,
+  },
+
+  notes: {
+    balanceLabel: (n, f) => `${count(n, 'nota', 'notas', f)} para consertar sequências`,
+    broke: (streak) => `Sua ${STREAK_NAMES[streak]} quebrou ontem.`,
+    repairOffer: (restores, icon, cost, f) => `Consertar para ${f.number(restores)} ${icon} por ${f.number(cost)} ♪`,
+    missing: (n, f) => `Faltam ${count(n, 'nota', 'notas', f)}.`,
+    confirm: (cost, f) => `Gastar ${f.number(cost)} ♪ para consertar ontem? Não dá para desfazer.`,
+    confirmYes: 'Sim, consertar',
+    cancel: 'Cancelar',
+    errors: {
+      noOffer: 'Este conserto não está mais disponível.',
+      notAffordable: 'Não há notas suficientes para este conserto.',
+      other: 'Não foi possível salvar o conserto. Tente de novo.',
+    },
+  },
+
+  celebrations: {
+    goalReached: 'Você alcançou a meta de hoje! 🎉',
+    streakMilestone: (streak, days, f) => `${count(days, 'dia', 'dias', f)} de ${STREAK_NAMES[streak]}! 🔥`,
+    newBestStars: (stars, f) => `Novo recorde: ${count(stars, 'estrela', 'estrelas', f)}!`,
+    dismiss: 'Fechar',
+  },
+
+  settings: {
+    heading: 'Configurações',
+    back: '← Jogadores',
+    playersHeading: 'Jogadores',
+    newPlayerName: 'Nome do novo jogador',
+    avatar: 'Figura',
+    addPlayer: 'Adicionar jogador',
+    nameRequired: 'Digite um nome primeiro.',
+    name: 'Nome',
+    goal: 'Meta diária (minutos)',
+    greenCents: 'Verde (cents)',
+    yellowCents: 'Amarelo (cents)',
+    skipTuning: 'Pular a tela de afinação',
+    save: 'Salvar',
+    saved: 'Salvo.',
+    deletePlayer: 'Excluir jogador',
+    deleteConfirm: (name) => `Excluir ${name}? O jogador some da lista; as execuções continuam nos dados e nos backups.`,
+    deleteYes: 'Sim, excluir',
+    cancel: 'Cancelar',
+    a4Heading: 'Referência de afinação',
+    a4Label: 'Lá4 (Hz)',
+    a4Problem: (min, max, f) => `O Lá4 precisa ficar entre ${f.number(min)} e ${f.number(max)} Hz.`,
+    otherHeading: 'Outros',
+    tryAbc: 'Experimentar seu próprio ABC',
+  },
+
+  backup: {
+    heading: 'Backup',
+    export: 'Exportar backup',
+    import: 'Importar backup',
+    problems: {
+      notJson: 'Não foi possível ler este arquivo: ele não é um backup ou está danificado.',
+      notABackup: 'Este arquivo não é um backup do Violin Trainer.',
+      newerVersion: 'Este backup vem de uma versão mais nova do app. Atualize o app e depois importe.',
+    },
+    confirm: (profiles, attempts, f) =>
+      `Este backup tem ${count(profiles, 'jogador', 'jogadores', f)} e ${count(attempts, 'execução', 'execuções', f)}. Importar substitui todos os dados deste navegador; antes, uma cópia dos dados atuais é baixada.`,
+    replace: 'Substituir meus dados',
+    cancel: 'Cancelar',
+    restored: 'Backup restaurado.',
+    failed: 'Não foi possível restaurar o backup. Seus dados não foram alterados.',
+  },
+
+  storage: {
+    notSaved:
+      'Esta janela não consegue salvar o progresso (navegação anônima?). Dá para praticar, mas nada fica guardado depois de fechar.',
+    persistence: {
+      granted: 'Este navegador guarda os dados.',
+      denied: 'Este navegador pode apagar os dados: instale o app ou exporte backups com frequência.',
+      unsupported: 'Este navegador pode apagar os dados: exporte backups com frequência.',
+    },
   },
 
   microphoneErrors: {

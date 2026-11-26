@@ -1,22 +1,43 @@
 import { expect, test } from '@playwright/test'
+import { addProfile } from './helpers.ts'
 
-test('switching to Portuguese translates the app and is remembered', async ({ page }) => {
-  await page.goto('/')
+test('switching to Portuguese on the path translates the app and is remembered', async ({ page }) => {
+  await addProfile(page, 'Player A')
   await page.getByRole('combobox', { name: 'Language' }).selectOption('pt-BR')
-  await expect(page.getByRole('heading', { name: 'Exercícios' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Primeiros passos' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Cordas soltas' })).toBeVisible()
   await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR')
   await page.reload()
-  await expect(page.getByRole('heading', { name: 'Exercícios' })).toBeVisible()
-  await page.getByRole('button', { name: 'Corda Lá: dedos 0 a 3' }).click()
-  await expect(page.getByRole('heading', { name: 'Corda Lá: dedos 0 a 3' })).toBeVisible()
-  await expect(page.locator('.vt-hint').first()).toHaveText('Lá 0')
+  await expect(page.getByRole('heading', { name: 'Quem vai praticar?' })).toBeVisible()
+  await page.getByRole('button', { name: 'Player A' }).click()
+  await expect(page.getByRole('heading', { name: 'Primeiros passos' })).toBeVisible()
+  await page.getByRole('button', { name: 'Cordas soltas' }).click()
+  await expect(page.getByRole('heading', { name: 'Cordas soltas' })).toBeVisible()
+  await expect(page.locator('.vt-hint').first()).toHaveText('Sol 0')
   await expect(page.getByText('fique em silêncio por dois segundos')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Começar' })).toBeVisible()
 })
 
+test('the language is saved on the profile', async ({ page }) => {
+  await addProfile(page, 'Player A')
+  await page.getByRole('combobox', { name: 'Language' }).selectOption('pt-BR')
+  await page.getByRole('button', { name: '← Jogadores' }).click()
+  await page.getByRole('button', { name: 'Configurações' }).click()
+  await page.getByRole('textbox', { name: 'Nome do novo jogador' }).fill('Player B')
+  await page.getByRole('button', { name: 'Adicionar jogador' }).click()
+  await page.getByRole('button', { name: '← Jogadores' }).click()
+  // Player B was created in Portuguese too; switching it to English leaves Player A in Portuguese.
+  await page.getByRole('button', { name: 'Player B' }).click()
+  await page.getByRole('combobox', { name: 'Idioma' }).selectOption('en')
+  await page.getByRole('button', { name: '← Players' }).click()
+  await page.getByRole('button', { name: 'Player A' }).click()
+  await expect(page.getByRole('heading', { name: 'Primeiros passos' })).toBeVisible()
+})
+
 test('typed ABC survives a language switch and its problems are translated', async ({ page }) => {
   await page.goto('/')
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('button', { name: 'Try your own ABC' }).click()
   const box = page.getByRole('textbox', { name: 'ABC notation' })
   await box.fill('X:1\nK:D\nA [GB] |]')
   await page.getByRole('combobox', { name: 'Language' }).selectOption('pt-BR')
@@ -33,6 +54,7 @@ test.describe('Portuguese browser', () => {
   test.use({ locale: 'pt-BR' })
   test('picks Portuguese on first visit', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByRole('heading', { name: 'Exercícios' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Quem vai praticar?' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Adicionar o primeiro jogador' })).toBeVisible()
   })
 })

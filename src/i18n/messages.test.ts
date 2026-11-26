@@ -84,7 +84,31 @@ describe('English texts used by e2e selectors', () => {
     expect(en.picker.abcLabel).toBe('ABC notation')
     expect(en.picker.practiceThis).toBe('Practice this')
     expect(en.practice.start).toBe('Start')
-    expect(en.picker.exercisesHeading).toBe('Exercises')
+    expect(en.profiles.heading).toBe("Who's practising?")
+    expect(en.path.back).toBe('← Players')
+    expect(en.practice.backToPath).toBe('← Path')
+    expect(en.settings.newPlayerName).toBe('New player name')
+  })
+})
+
+describe('progress texts', () => {
+  const f = formatters('en', en, false)
+  const fp = formatters('pt-BR', ptBR, false)
+  test('practice time is m:ss, rounded down', () => {
+    expect(en.path.todayTime(0, 10, f)).toBe('0:00 of 10 min')
+    expect(en.path.todayTime(65_999, 10, f)).toBe('1:05 of 10 min')
+    expect(ptBR.practice.today(600_000, 15, fp)).toBe('Hoje: 10:00 de 15 min')
+  })
+  test('counts follow the plural rules', () => {
+    expect(en.streaks.label('easy', 1, f)).toBe('Playing streak: 1 day')
+    expect(en.streaks.label('practice', 3, f)).toBe('Goal streak: 3 days')
+    expect(en.notes.missing(1, f)).toBe('You need 1 more note.')
+    expect(en.backup.confirm(1, 2, f)).toMatch(/^This backup has 1 player and 2 runs\./)
+    expect(ptBR.backup.confirm(2, 1, fp)).toMatch(/^Este backup tem 2 jogadores e 1 execução\./)
+    expect(ptBR.celebrations.newBestStars(1, fp)).toBe('Novo recorde: 1 estrela!')
+  })
+  test('a repair offer names the streak it restores (R4)', () => {
+    expect(en.notes.repairOffer(12, '🔥', 40, f)).toBe('Repair to 12 🔥 for 40 ♪')
   })
 })
 

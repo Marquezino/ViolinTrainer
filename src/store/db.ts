@@ -1,4 +1,4 @@
-import Dexie, { type Table } from 'dexie'
+import Dexie, { type DexieOptions, type Table } from 'dexie'
 import type {
   Attempt,
   ExerciseRecord,
@@ -49,8 +49,8 @@ export class VtDatabase extends Dexie {
   manualUnlocks!: Table<ManualUnlock, string>
   streakRepairs!: Table<StreakRepair, string>
 
-  constructor(name: string) {
-    super(name)
+  constructor(name: string, options?: DexieOptions) {
+    super(name, options)
     this.version(SCHEMA_VERSION).stores({
       profiles: 'id',
       goalSettings: 'id, profileId',
@@ -65,6 +65,7 @@ export class VtDatabase extends Dexie {
   }
 }
 
-export function openDatabase(name: string = DB_NAME): VtDatabase {
-  return new VtDatabase(name)
+/** `options` can supply another IndexedDB, e.g. an in-memory one when the browser's is unavailable. */
+export function openDatabase(name: string = DB_NAME, options?: DexieOptions): VtDatabase {
+  return new VtDatabase(name, options)
 }
