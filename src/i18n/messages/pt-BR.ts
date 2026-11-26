@@ -60,6 +60,17 @@ export const ptBR: Messages = {
     sharpLabel: 'acima',
   },
 
+  leaderboard: {
+    heading: 'Esta semana',
+    open: '🏆 Esta semana',
+    back: '← Voltar',
+    empty: 'Adicione um jogador nas Configurações para começar o placar da semana.',
+    subtitle: 'Ordenado pelos dias em que a meta foi alcançada, de segunda a domingo.',
+    placeLabel: (place, f) => `Posição ${f.number(place)}`,
+    goalDays: (days, f) => `${count(days, 'dia de meta', 'dias de meta', f)}`,
+    runs: (runs, f) => `${count(runs, 'execução completa', 'execuções completas', f)}`,
+  },
+
   profiles: {
     heading: 'Quem vai praticar?',
     addFirst: 'Adicionar o primeiro jogador',

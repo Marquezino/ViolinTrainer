@@ -84,6 +84,19 @@ export interface Messages {
     avatars: Record<Avatar, string>
   }
 
+  leaderboard: {
+    heading: string
+    /** Button on the picker and the path. */
+    open: string
+    back: string
+    empty: string
+    /** Shown above the rows: this ranks effort, not skill. */
+    subtitle: string
+    placeLabel: (place: number, f: Formatters) => string
+    goalDays: (days: number, f: Formatters) => string
+    runs: (runs: number, f: Formatters) => string
+  }
+
   path: {
     back: string
     /** Visible next to the goal ring. */

@@ -31,8 +31,8 @@ function unitTitle(t: Messages, unit: Unit): string {
   return key ? t.unitTitles[key] : unit.title || t.untitled
 }
 
-export function PathScreen(props: { profileId: string; onBack: () => void; onPlay: (exerciseId: string) => void }) {
-  const { profileId, onBack, onPlay } = props
+export function PathScreen(props: { profileId: string; onBack: () => void; onLeaderboard: () => void; onPlay: (exerciseId: string) => void }) {
+  const { profileId, onBack, onLeaderboard, onPlay } = props
   const { locale, t, setLocale, format } = useI18n()
   const f = format(false)
   const db = useDb()
@@ -77,6 +77,9 @@ export function PathScreen(props: { profileId: string; onBack: () => void; onPla
           {t.path.back}
         </button>
         <h1>{profile.name}</h1>
+        <button type="button" onClick={onLeaderboard}>
+          {t.leaderboard.open}
+        </button>
         <select
           aria-label={t.languageLabel}
           value={locale}

@@ -59,6 +59,17 @@ export const en: Messages = {
     sharpLabel: 'sharp',
   },
 
+  leaderboard: {
+    heading: 'This week',
+    open: '🏆 This week',
+    back: '← Back',
+    empty: 'Add a player in Settings to start the weekly board.',
+    subtitle: 'Ranked by days the goal was reached, Monday to Sunday.',
+    placeLabel: (place, f) => `Place ${f.number(place)}`,
+    goalDays: (days, f) => `${count(days, 'goal day', 'goal days', f)}`,
+    runs: (runs, f) => `${count(runs, 'finished run', 'finished runs', f)}`,
+  },
+
   profiles: {
     heading: "Who's practising?",
     addFirst: 'Add the first player',

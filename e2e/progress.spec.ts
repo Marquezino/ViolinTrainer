@@ -180,3 +180,30 @@ test('after importing a backup over the same player, settings show and keep the 
   await expect(reloaded.getByRole('textbox', { name: 'Name' })).toHaveValue('Player A')
   await expect(reloaded.getByRole('combobox', { name: 'Daily goal (minutes)' })).toHaveValue('10')
 })
+
+test('leaderboard lists every player with goal-day dots and no stars', async ({ page }) => {
+  await addProfile(page, 'Player A')
+  await playOpenStringsToTheEnd(page)
+  await page.getByRole('button', { name: 'Back to path' }).click()
+  await page.getByRole('button', { name: '← Players' }).click()
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('textbox', { name: 'New player name' }).fill('Player B')
+  await page.getByRole('button', { name: 'Add player' }).click()
+  await page.getByRole('button', { name: '← Players' }).click()
+
+  await page.getByRole('button', { name: '🏆 This week' }).click()
+  await expect(page.getByRole('heading', { name: 'This week' })).toBeVisible()
+  const rows = page.locator('.leaderboard-row')
+  await expect(rows).toHaveCount(2)
+  await expect(rows.filter({ hasText: 'Player A' })).toContainText('1 finished run')
+  await expect(rows.filter({ hasText: 'Player B' })).toBeVisible()
+  await expect(rows.first().locator('.week-dots')).toHaveText(/^[●○]{7}$/)
+  await expect(page.locator('main')).not.toContainText('★')
+
+  // Back returns to where it was opened from: here the picker, then the path.
+  await page.getByRole('button', { name: '← Back' }).click()
+  await page.getByRole('button', { name: 'Player A' }).click()
+  await page.getByRole('button', { name: '🏆 This week' }).click()
+  await page.getByRole('button', { name: '← Back' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Player A' })).toBeVisible()
+})

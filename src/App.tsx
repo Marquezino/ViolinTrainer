@@ -7,6 +7,7 @@ import { hintCounts, initialHintFor } from './progress/hints'
 import { parseExercise } from './score/abc'
 import type { HintState } from './store/records'
 import { useDb, useStorageAvailable } from './ui/DbProvider'
+import { LeaderboardScreen } from './ui/LeaderboardScreen'
 import { exerciseTitle, PathScreen } from './ui/PathScreen'
 import { PracticeScreen } from './ui/PracticeScreen'
 import { ProfilePicker } from './ui/ProfilePicker'
@@ -18,7 +19,7 @@ type Screen =
   | { name: 'path'; profileId: string }
   | { name: 'tuning'; profileId: string; exerciseId: string } // Task 13
   | { name: 'practice'; profileId: string; exerciseId: string }
-  | { name: 'leaderboard'; from: Screen } // Task 12
+  | { name: 'leaderboard'; from: Screen }
   | { name: 'settings' }
   | { name: 'tryAbc' }
 
@@ -47,6 +48,7 @@ function CurrentScreen({ screen, go }: { screen: Screen; go: (s: Screen) => void
         <PathScreen
           profileId={screen.profileId}
           onBack={() => go({ name: 'picker' })}
+          onLeaderboard={() => go({ name: 'leaderboard', from: screen })}
           // Until the tuning screen exists (Task 13), every exercise starts straight away.
           onPlay={(exerciseId) => go({ name: 'practice', profileId: screen.profileId, exerciseId })}
         />
@@ -64,8 +66,9 @@ function CurrentScreen({ screen, go }: { screen: Screen; go: (s: Screen) => void
       return <SettingsScreen onBack={() => go({ name: 'picker' })} onTryAbc={() => go({ name: 'tryAbc' })} />
     case 'tryAbc':
       return <TryAbcRoute onBack={() => go({ name: 'settings' })} />
+    case 'leaderboard':
+      return <LeaderboardScreen onBack={() => go(screen.from)} />
     case 'picker':
-    case 'leaderboard': // Task 12
       return (
         <ProfilePicker
           onChoose={(profile) => {
@@ -74,6 +77,7 @@ function CurrentScreen({ screen, go }: { screen: Screen; go: (s: Screen) => void
             go({ name: 'path', profileId: profile.id })
           }}
           onSettings={() => go({ name: 'settings' })}
+          onLeaderboard={() => go({ name: 'leaderboard', from: screen })}
         />
       )
   }

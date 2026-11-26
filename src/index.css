@@ -600,3 +600,46 @@ input[type='number'] {
 .file-input input {
   font: inherit;
 }
+
+/* Leaderboard */
+
+.leaderboard-subtitle {
+  margin: 8px 0 16px;
+}
+
+.leaderboard-rows {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.leaderboard-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  min-height: 64px;
+}
+
+.leaderboard-place {
+  font-size: 1.8rem;
+  font-weight: 700;
+  min-width: 48px;
+  text-align: center;
+}
+
+.leaderboard-row .avatar {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.leaderboard-row .profile-name {
+  flex: 1 1 8ch;
+}
+
+.leaderboard-row .week-dots {
+  margin: 0;
+  letter-spacing: 0.15em;
+}

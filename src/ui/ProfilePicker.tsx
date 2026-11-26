@@ -9,8 +9,8 @@ import { AvatarIcon } from './Avatar'
 import { useDb } from './DbProvider'
 import { StreakBadges } from './StreakBadges'
 
-export function ProfilePicker(props: { onChoose: (profile: Profile) => void; onSettings: () => void }) {
-  const { onChoose, onSettings } = props
+export function ProfilePicker(props: { onChoose: (profile: Profile) => void; onSettings: () => void; onLeaderboard: () => void }) {
+  const { onChoose, onSettings, onLeaderboard } = props
   const { t } = useI18n()
   const db = useDb()
   const cards = useLiveQuery(async () => {
@@ -25,7 +25,9 @@ export function ProfilePicker(props: { onChoose: (profile: Profile) => void; onS
     <main className="picker">
       <header className="screen-header">
         <h1>{t.profiles.heading}</h1>
-        {/* The leaderboard link comes with Task 12. */}
+        <button type="button" onClick={onLeaderboard}>
+          {t.leaderboard.open}
+        </button>
         <button type="button" onClick={onSettings}>
           {t.profiles.settings}
         </button>
