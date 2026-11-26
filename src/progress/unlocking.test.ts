@@ -57,3 +57,20 @@ test('deleted exercises are not in the result even if played', () => {
   const unlocked = unlockedExercises(['a', 'b'], [attempt('gone', 3)], ['gone2'])
   expect([...unlocked]).toEqual(['a'])
 })
+
+test('an unfinished run never earns stars or unlocks the next exercise', () => {
+  const attempts = [attempt('a', 3, false)]
+  expect(bestStars(attempts).size).toBe(0)
+  const unlocked = unlockedExercises(['a', 'b'], attempts, [])
+  expect(unlocked.has('b')).toBe(false)
+})
+
+test('nextToPlay falls back to the last unlocked exercise when all have 2+ stars', () => {
+  const path = ['a', 'b', 'c']
+  const attempts = [attempt('a', 2), attempt('b', 3)]
+  const unlocked = unlockedExercises(path, attempts, [])
+  expect(unlocked.has('c')).toBe(true)
+  const best = new Map<string, Stars>([['a', 2], ['b', 3], ['c', 2]])
+  expect(nextToPlay(path, unlocked, best)).toBe('c')
+  expect(nextToPlay(['a', 'b'], new Set(['a']), new Map<string, Stars>([['a', 3]]))).toBe('a')
+})
