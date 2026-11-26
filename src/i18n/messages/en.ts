@@ -1,4 +1,5 @@
 import { LETTER_NOTE_NAMES } from '../../music/pitch'
+import { STREAK_SYMBOLS } from '../streak-symbols'
 import type { Formatters, Messages } from './types'
 
 const count = (n: number, one: string, other: string, f: Formatters) =>
@@ -135,7 +136,7 @@ export const en: Messages = {
 
   celebrations: {
     goalReached: "You reached today's goal! 🎉",
-    streakMilestone: (streak, days, f) => `${count(days, 'day', 'days', f)} ${STREAK_NAMES[streak]}! 🔥`,
+    streakMilestone: (streak, days, f) => `${f.number(days)}-day ${STREAK_NAMES[streak]}! ${STREAK_SYMBOLS[streak]}`,
     newBestStars: (stars, f) => `New best: ${count(stars, 'star', 'stars', f)}!`,
     dismiss: 'Close',
   },

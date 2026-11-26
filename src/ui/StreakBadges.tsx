@@ -1,8 +1,7 @@
 import { useI18n } from '../i18n/I18nProvider'
-import type { StreakKind } from '../store/records'
+import { STREAK_SYMBOLS } from '../i18n/streak-symbols'
 
-/** One symbol per streak, the same in both languages. */
-export const STREAK_SYMBOLS: Record<StreakKind, string> = { easy: '🌱', practice: '🔥' }
+export { STREAK_SYMBOLS }
 
 export function StreakBadges({ easy, practice }: { easy: number; practice: number }) {
   const { t, format } = useI18n()

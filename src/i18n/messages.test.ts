@@ -103,9 +103,17 @@ describe('progress texts', () => {
     expect(en.streaks.label('easy', 1, f)).toBe('Playing streak: 1 day')
     expect(en.streaks.label('practice', 3, f)).toBe('Goal streak: 3 days')
     expect(en.notes.missing(1, f)).toBe('You need 1 more note.')
+    expect(ptBR.notes.missing(1, fp)).toBe('Falta 1 nota.')
+    expect(ptBR.notes.missing(3, fp)).toBe('Faltam 3 notas.')
     expect(en.backup.confirm(1, 2, f)).toMatch(/^This backup has 1 player and 2 runs\./)
     expect(ptBR.backup.confirm(2, 1, fp)).toMatch(/^Este backup tem 2 jogadores e 1 execução\./)
     expect(ptBR.celebrations.newBestStars(1, fp)).toBe('Novo recorde: 1 estrela!')
+  })
+  test('streak milestones read naturally and use the symbol of their streak', () => {
+    expect(en.celebrations.streakMilestone('easy', 7, f)).toBe('7-day playing streak! 🌱')
+    expect(en.celebrations.streakMilestone('practice', 30, f)).toBe('30-day goal streak! 🔥')
+    expect(ptBR.celebrations.streakMilestone('easy', 7, fp)).toBe('Sequência de 7 dias tocando! 🌱')
+    expect(ptBR.celebrations.streakMilestone('practice', 100, fp)).toBe('Sequência de 100 dias cumprindo a meta! 🔥')
   })
   test('a repair offer names the streak it restores (R4)', () => {
     expect(en.notes.repairOffer(12, '🔥', 40, f)).toBe('Repair to 12 🔥 for 40 ♪')

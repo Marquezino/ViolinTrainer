@@ -1,4 +1,5 @@
 import { SOLFEGE_NOTE_NAMES } from '../../music/pitch'
+import { STREAK_SYMBOLS } from '../streak-symbols'
 import type { Formatters, Messages } from './types'
 
 const count = (n: number, one: string, other: string, f: Formatters) =>
@@ -124,7 +125,7 @@ export const ptBR: Messages = {
     balanceLabel: (n, f) => `${count(n, 'nota', 'notas', f)} para consertar sequências`,
     broke: (streak) => `Sua ${STREAK_NAMES[streak]} quebrou ontem.`,
     repairOffer: (restores, icon, cost, f) => `Consertar para ${f.number(restores)} ${icon} por ${f.number(cost)} ♪`,
-    missing: (n, f) => `Faltam ${count(n, 'nota', 'notas', f)}.`,
+    missing: (n, f) => `${f.plural(n) === 'one' ? 'Falta' : 'Faltam'} ${count(n, 'nota', 'notas', f)}.`,
     confirm: (cost, f) => `Gastar ${f.number(cost)} ♪ para consertar ontem? Não dá para desfazer.`,
     confirmYes: 'Sim, consertar',
     cancel: 'Cancelar',
@@ -137,7 +138,8 @@ export const ptBR: Messages = {
 
   celebrations: {
     goalReached: 'Você alcançou a meta de hoje! 🎉',
-    streakMilestone: (streak, days, f) => `${count(days, 'dia', 'dias', f)} de ${STREAK_NAMES[streak]}! 🔥`,
+    streakMilestone: (streak, days, f) =>
+      `Sequência de ${count(days, 'dia', 'dias', f)} ${streak === 'easy' ? 'tocando' : 'cumprindo a meta'}! ${STREAK_SYMBOLS[streak]}`,
     newBestStars: (stars, f) => `Novo recorde: ${count(stars, 'estrela', 'estrelas', f)}!`,
     dismiss: 'Fechar',
   },
