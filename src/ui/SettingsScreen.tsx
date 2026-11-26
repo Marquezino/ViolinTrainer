@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useI18n } from '../i18n/I18nProvider'
 import { validateTolerances, type ToleranceProblem } from '../music/pitch'
@@ -11,6 +11,7 @@ import {
   type BackupProblem,
 } from '../store/backup'
 import { persistenceStatus, type PersistenceStatus } from '../store/persistence'
+import { deleteAllData } from '../store/reset'
 import {
   createProfile,
   deleteProfile,
@@ -90,6 +91,8 @@ export function SettingsScreen(props: { onBack: () => void; onTryAbc: () => void
           {t.settings.tryAbc}
         </button>
       </section>
+
+      <DeleteAllSection />
     </main>
   )
 }
@@ -407,6 +410,101 @@ function BackupSection({ onRestored }: { onRestored: () => void }) {
         </p>
       )}
       {state.step === 'exportFailed' && (
+        <p className="errors" role="alert">
+          {t.backup.exportFailed}
+        </p>
+      )}
+    </section>
+  )
+}
+
+type DeleteState = 'idle' | 'confirm' | 'deleting' | 'failed' | 'exportFailed'
+
+/** Deletes the whole database and the saved language, then reloads into a fresh app. */
+function DeleteAllSection() {
+  const { t, locale } = useI18n()
+  const db = useDb()
+  const [state, setState] = useState<DeleteState>('idle')
+  const [typed, setTyped] = useState('')
+  const headingId = useId()
+  const wordId = useId()
+  const matches = typed.trim().toLocaleUpperCase(locale) === t.deleteAll.word
+
+  const remove = async () => {
+    setState('deleting')
+    try {
+      await deleteAllData(db)
+    } catch (e) {
+      console.error('Deleting all data failed', e)
+      setState('failed')
+      return
+    }
+    // A fresh start: an empty picker, and the built-in units synced again.
+    location.reload()
+  }
+
+  return (
+    <section className="danger-zone" aria-labelledby={headingId}>
+      <h2 id={headingId}>{t.deleteAll.heading}</h2>
+      <p>{t.deleteAll.explain}</p>
+      <p>
+        <button
+          type="button"
+          onClick={() => {
+            if (state === 'exportFailed') setState('idle')
+            downloadBackup(db).catch((e: unknown) => {
+              console.error('Exporting the backup failed', e)
+              setState('exportFailed')
+            })
+          }}
+        >
+          {t.deleteAll.exportFirst}
+        </button>
+      </p>
+      {state === 'confirm' || state === 'deleting' ? (
+        <form
+          className="confirm"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (matches && state === 'confirm') void remove()
+          }}
+        >
+          <p>{t.deleteAll.sure}</p>
+          <label htmlFor={wordId}>{t.deleteAll.typeWord(t.deleteAll.word)}</label>
+          <input
+            id={wordId}
+            type="text"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+          />
+          <button type="submit" className="danger" disabled={!matches || state === 'deleting'}>
+            {t.deleteAll.confirm}
+          </button>
+          <button type="button" disabled={state === 'deleting'} onClick={() => setState('idle')}>
+            {t.deleteAll.cancel}
+          </button>
+        </form>
+      ) : (
+        <button
+          type="button"
+          className="danger"
+          onClick={() => {
+            setTyped('')
+            setState('confirm')
+          }}
+        >
+          {t.deleteAll.start}
+        </button>
+      )}
+      {state === 'failed' && (
+        <p className="errors" role="alert">
+          {t.deleteAll.failed}
+        </p>
+      )}
+      {state === 'exportFailed' && (
         <p className="errors" role="alert">
           {t.backup.exportFailed}
         </p>

@@ -217,6 +217,23 @@ export interface Messages {
     exportFailed: string
   }
 
+  /** The red "delete all data" section at the bottom of settings. */
+  deleteAll: {
+    heading: string
+    explain: string
+    /** The export button of this section (the backup section has its own). */
+    exportFirst: string
+    start: string
+    /** Second step, above the typed confirmation. */
+    sure: string
+    /** The word to type; it follows the language. */
+    word: string
+    typeWord: (word: string) => string
+    confirm: string
+    cancel: string
+    failed: string
+  }
+
   storage: {
     notSaved: string
     persistence: Record<PersistenceStatus, string>

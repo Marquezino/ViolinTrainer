@@ -17,3 +17,12 @@ export function saveLocale(locale: Locale): void {
     // Storage can be unavailable (private mode, blocked); the choice just isn't remembered.
   }
 }
+
+/** Forgets the saved choice, so the next visit picks the language from the browser again. */
+export function clearSavedLocale(): void {
+  try {
+    localStorage.removeItem(LOCALE_STORAGE_KEY)
+  } catch {
+    // Nothing saved that can be reached.
+  }
+}

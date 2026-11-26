@@ -205,6 +205,20 @@ export const en: Messages = {
     exportFailed: 'The backup could not be saved. Try again.',
   },
 
+  deleteAll: {
+    heading: 'Delete all data',
+    explain:
+      'Deletes every player, all progress, streaks, notes and settings saved in this browser. This cannot be undone: export a backup first if you may want them back.',
+    exportFirst: 'Export a backup first',
+    start: 'Delete all data…',
+    sure: 'Are you sure? Everything in this browser will be gone for good.',
+    word: 'DELETE',
+    typeWord: (word) => `Type ${word} to confirm`,
+    confirm: 'Delete everything',
+    cancel: 'Cancel',
+    failed: 'The data could not be deleted, and nothing was changed. Close the app in other tabs and try again.',
+  },
+
   storage: {
     notSaved: "This window can't save progress (private browsing?). Practice works, but nothing is kept after it closes.",
     persistence: {

@@ -208,6 +208,20 @@ export const ptBR: Messages = {
     exportFailed: 'Não foi possível salvar o backup. Tente de novo.',
   },
 
+  deleteAll: {
+    heading: 'Apagar todos os dados',
+    explain:
+      'Apaga todos os jogadores, o progresso, as sequências, as notas e as configurações guardados neste navegador. Não dá para desfazer: se puder querer tudo de volta, exporte um backup antes.',
+    exportFirst: 'Exportar um backup antes',
+    start: 'Apagar todos os dados…',
+    sure: 'Tem certeza? Tudo o que está neste navegador vai sumir de vez.',
+    word: 'APAGAR',
+    typeWord: (word) => `Digite ${word} para confirmar`,
+    confirm: 'Apagar tudo',
+    cancel: 'Cancelar',
+    failed: 'Não foi possível apagar os dados; nada foi alterado. Feche o app em outras abas e tente de novo.',
+  },
+
   storage: {
     notSaved:
       'Esta janela não consegue salvar o progresso (navegação anônima?). Dá para praticar, mas nada fica guardado depois de fechar.',

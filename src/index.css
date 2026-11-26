@@ -830,3 +830,17 @@ div.with-help {
   margin: 0;
   color: var(--muted);
 }
+
+/* Delete all data: the danger zone at the bottom of settings */
+
+.settings section.danger-zone {
+  margin-top: 48px;
+  padding: 16px;
+  border: 2px solid var(--red);
+  border-radius: 12px;
+}
+
+.danger-zone h2 {
+  margin-top: 0;
+  color: var(--red);
+}
