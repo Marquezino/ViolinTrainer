@@ -98,9 +98,10 @@ function TunerNeedle({ reading }: { reading: TunerReading | null }) {
   let left: number | null = null
   if (reading) {
     const cents = Math.round(reading.cents)
-    const abs = Math.abs(cents)
-    zone = Math.abs(reading.cents) <= TUNING_GREEN_CENTS ? 'green' : 'tuning'
-    label = abs === 0 ? t.needle.inTune : t.needle.cents(abs, cents > 0 ? 'sharp' : 'flat', f)
+    const inTune = Math.abs(reading.cents) <= TUNING_GREEN_CENTS
+    zone = inTune ? 'green' : 'tuning'
+    // The label agrees with the needle: the whole green band reads "In tune".
+    label = inTune ? t.needle.inTune : t.needle.cents(Math.abs(cents), cents > 0 ? 'sharp' : 'flat', f)
     left = 50 + (Math.max(-RANGE_CENTS, Math.min(RANGE_CENTS, reading.cents)) / RANGE_CENTS) * 50
   }
 
