@@ -59,6 +59,17 @@ export const en: Messages = {
     sharpLabel: 'sharp',
   },
 
+  tuning: {
+    heading: 'Tune your violin',
+    intro: 'Play each open string. Turn the peg or the fine tuner until the needle is green. The string you are playing lights up.',
+    stringsLabel: 'Open strings',
+    listen: 'Start listening',
+    prompt: 'Play an open string',
+    skip: 'Skip',
+    ready: 'Ready',
+    dontShowAgain: "Don't show before practice",
+  },
+
   leaderboard: {
     heading: 'This week',
     open: '🏆 This week',

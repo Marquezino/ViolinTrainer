@@ -13,11 +13,12 @@ import { PracticeScreen } from './ui/PracticeScreen'
 import { ProfilePicker } from './ui/ProfilePicker'
 import { SettingsScreen } from './ui/SettingsScreen'
 import { TryAbcScreen } from './ui/TryAbcScreen'
+import { TuningScreen } from './ui/TuningScreen'
 
 type Screen =
   | { name: 'picker' }
   | { name: 'path'; profileId: string }
-  | { name: 'tuning'; profileId: string; exerciseId: string } // Task 13
+  | { name: 'tuning'; profileId: string; exerciseId: string }
   | { name: 'practice'; profileId: string; exerciseId: string }
   | { name: 'leaderboard'; from: Screen }
   | { name: 'settings' }
@@ -45,15 +46,23 @@ function CurrentScreen({ screen, go }: { screen: Screen; go: (s: Screen) => void
   switch (screen.name) {
     case 'path':
       return (
-        <PathScreen
+        <PathRoute
           profileId={screen.profileId}
           onBack={() => go({ name: 'picker' })}
           onLeaderboard={() => go({ name: 'leaderboard', from: screen })}
-          // Until the tuning screen exists (Task 13), every exercise starts straight away.
-          onPlay={(exerciseId) => go({ name: 'practice', profileId: screen.profileId, exerciseId })}
+          onPlay={(exerciseId, skipTuning) =>
+            go({ name: skipTuning ? 'practice' : 'tuning', profileId: screen.profileId, exerciseId })
+          }
         />
       )
     case 'tuning':
+      return (
+        <TuningRoute
+          profileId={screen.profileId}
+          onBack={() => go({ name: 'path', profileId: screen.profileId })}
+          onDone={() => go({ name: 'practice', profileId: screen.profileId, exerciseId: screen.exerciseId })}
+        />
+      )
     case 'practice':
       return (
         <PracticeRoute
@@ -81,6 +90,39 @@ function CurrentScreen({ screen, go }: { screen: Screen; go: (s: Screen) => void
         />
       )
   }
+}
+
+/** The path, with the profile's "skip tuning" choice attached to every play. */
+function PathRoute(props: {
+  profileId: string
+  onBack: () => void
+  onLeaderboard: () => void
+  onPlay: (exerciseId: string, skipTuning: boolean) => void
+}) {
+  const { profileId, onPlay, ...rest } = props
+  const db = useDb()
+  const skipTuning = useLiveQuery(async () => (await db.profiles.get(profileId))?.skipTuning ?? false, [db, profileId])
+  return <PathScreen profileId={profileId} {...rest} onPlay={(exerciseId) => onPlay(exerciseId, skipTuning ?? false)} />
+}
+
+/** The tuning helper with the profile's choice and the A4 setting. */
+function TuningRoute(props: { profileId: string; onBack: () => void; onDone: () => void }) {
+  const { profileId, onBack, onDone } = props
+  const db = useDb()
+  const data = useLiveQuery(async () => {
+    const [profile, settings] = await Promise.all([db.profiles.get(profileId), db.settings.get('app')])
+    return { profile, a4Hz: settings?.a4Hz ?? DEFAULT_A4_HZ }
+  }, [db, profileId])
+  if (!data?.profile) return null
+  return (
+    <TuningScreen
+      profileId={profileId}
+      a4Hz={data.a4Hz}
+      skipTuning={data.profile.skipTuning}
+      onBack={onBack}
+      onDone={onDone}
+    />
+  )
 }
 
 function sessionConfig(

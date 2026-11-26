@@ -472,6 +472,82 @@ input[type='number'] {
   white-space: nowrap;
 }
 
+/* Tuning: tablet-first, big string tiles that stay in one row even in portrait */
+
+.tuning-strings {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.tuning-string {
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  transition: border-color 150ms, color 150ms;
+}
+
+.tuning-string-current {
+  border-color: var(--current);
+  color: var(--text);
+}
+
+.tuning-string-green {
+  border-color: var(--green);
+  background: var(--band-green);
+}
+
+.tuning .needle-scale {
+  height: 40px;
+  border-radius: 20px;
+}
+
+.tuning .needle-tuning .needle-pointer {
+  background: var(--current);
+}
+
+.tuning-actions {
+  margin: 24px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tuning-actions label.checkbox {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.tuning-actions label.checkbox input {
+  width: 28px;
+  height: 28px;
+}
+
+.tuning-actions button {
+  min-width: 160px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tuning-string {
+    transition: none;
+  }
+}
+
 /* Practice */
 
 .goal-banner {

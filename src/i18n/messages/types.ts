@@ -77,6 +77,23 @@ export interface Messages {
     sharpLabel: string
   }
 
+  /** The tuning helper offered before practice (§7.4). Needle texts come from `needle`. */
+  tuning: {
+    heading: string
+    intro: string
+    /** Screen-reader label of the list of the four open strings. */
+    stringsLabel: string
+    listen: string
+    /** Needle text while no string is heard. */
+    prompt: string
+    /** Goes to practice before listening. */
+    skip: string
+    /** Goes to practice after tuning. */
+    ready: string
+    /** Per-profile checkbox: skip the tuning screen from now on. */
+    dontShowAgain: string
+  }
+
   profiles: {
     heading: string
     addFirst: string

@@ -60,6 +60,17 @@ export const ptBR: Messages = {
     sharpLabel: 'acima',
   },
 
+  tuning: {
+    heading: 'Afine o violino',
+    intro: 'Toque cada corda solta. Gire a cravelha ou o microafinador até a agulha ficar verde. A corda que você está tocando fica destacada.',
+    stringsLabel: 'Cordas soltas',
+    listen: 'Começar a ouvir',
+    prompt: 'Toque uma corda solta',
+    skip: 'Pular',
+    ready: 'Pronto',
+    dontShowAgain: 'Não mostrar antes de praticar',
+  },
+
   leaderboard: {
     heading: 'Esta semana',
     open: '🏆 Esta semana',

@@ -207,3 +207,36 @@ test('leaderboard lists every player with goal-day dots and no stars', async ({ 
   await page.getByRole('button', { name: '← Back' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Player A' })).toBeVisible()
 })
+
+test('tuning screen appears before practice and can be skipped for next time', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await addProfile(page, 'Player A', { skipTuning: false })
+
+  await page.getByRole('button', { name: 'Open strings' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Tune your violin' })).toBeVisible()
+  const strings = page.getByRole('list', { name: 'Open strings' }).getByRole('listitem')
+  await expect(strings).toHaveText(['G3', 'D4', 'A4', 'E5'])
+  await page.getByRole('button', { name: 'Start listening' }).click()
+  // The fake microphone plays the open strings: one of them lights up as the one being tuned.
+  await expect(page.locator('.tuning-string[aria-current="true"]')).toHaveCount(1, { timeout: 15_000 })
+  await page.getByRole('button', { name: 'Ready' }).click()
+  await expect(page.getByRole('button', { name: 'Start' })).toBeVisible()
+
+  // Tuning is offered again next time, until the player asks not to see it.
+  await page.getByRole('button', { name: '← Path' }).click()
+  await page.getByRole('button', { name: 'Open strings' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Tune your violin' })).toBeVisible()
+  await page.getByRole('checkbox', { name: "Don't show before practice" }).check()
+  await page.getByRole('button', { name: 'Skip' }).click()
+  await expect(page.getByRole('button', { name: 'Start' })).toBeVisible()
+
+  await page.reload()
+  await page.getByRole('button', { name: 'Player A' }).click()
+  await page.getByRole('button', { name: 'Open strings' }).click()
+  await expect(page.getByRole('button', { name: 'Start' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Tune your violin' })).toHaveCount(0)
+  // Tuning is a helper only: nothing was saved as a run.
+  expect(await storedAttempts(page)).toEqual([])
+  expect(errors).toEqual([])
+})
