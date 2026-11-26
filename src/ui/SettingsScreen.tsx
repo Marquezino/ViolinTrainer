@@ -418,25 +418,34 @@ function BackupSection({ onRestored }: { onRestored: () => void }) {
   )
 }
 
-type DeleteState = 'idle' | 'confirm' | 'deleting' | 'failed' | 'exportFailed'
-
 /** Deletes the whole database and the saved language, then reloads into a fresh app. */
 function DeleteAllSection() {
   const { t, locale } = useI18n()
   const db = useDb()
-  const [state, setState] = useState<DeleteState>('idle')
+  // The word to type, fixed when the second step opens: a language switch meanwhile keeps it.
+  const [word, setWord] = useState<{ word: string; locale: string } | null>(null)
   const [typed, setTyped] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [problem, setProblem] = useState<'failed' | 'blocked' | null>(null)
+  const [exportFailed, setExportFailed] = useState(false)
   const headingId = useId()
   const wordId = useId()
-  const matches = typed.trim().toLocaleUpperCase(locale) === t.deleteAll.word
+  const matches = word !== null && typed.trim().toLocaleUpperCase(word.locale) === word.word
 
   const remove = async () => {
-    setState('deleting')
+    setDeleting(true)
+    setProblem(null)
     try {
-      await deleteAllData(db)
+      await deleteAllData(db, {
+        onBlocked: () => {
+          setDeleting(false)
+          setProblem('blocked')
+        },
+      })
     } catch (e) {
       console.error('Deleting all data failed', e)
-      setState('failed')
+      setDeleting(false)
+      setProblem('failed')
       return
     }
     // A fresh start: an empty picker, and the built-in units synced again.
@@ -450,27 +459,33 @@ function DeleteAllSection() {
       <p>
         <button
           type="button"
+          disabled={deleting}
           onClick={() => {
-            if (state === 'exportFailed') setState('idle')
+            setExportFailed(false)
             downloadBackup(db).catch((e: unknown) => {
               console.error('Exporting the backup failed', e)
-              setState('exportFailed')
+              setExportFailed(true)
             })
           }}
         >
           {t.deleteAll.exportFirst}
         </button>
       </p>
-      {state === 'confirm' || state === 'deleting' ? (
+      {exportFailed && (
+        <p className="errors" role="alert">
+          {t.backup.exportFailed}
+        </p>
+      )}
+      {word ? (
         <form
           className="confirm"
           onSubmit={(e) => {
             e.preventDefault()
-            if (matches && state === 'confirm') void remove()
+            if (matches && !deleting) void remove()
           }}
         >
           <p>{t.deleteAll.sure}</p>
-          <label htmlFor={wordId}>{t.deleteAll.typeWord(t.deleteAll.word)}</label>
+          <label htmlFor={wordId}>{t.deleteAll.typeWord(word.word)}</label>
           <input
             id={wordId}
             type="text"
@@ -480,10 +495,18 @@ function DeleteAllSection() {
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
           />
-          <button type="submit" className="danger" disabled={!matches || state === 'deleting'}>
+          <button type="submit" className="danger" disabled={!matches || deleting}>
             {t.deleteAll.confirm}
           </button>
-          <button type="button" disabled={state === 'deleting'} onClick={() => setState('idle')}>
+          <button
+            type="button"
+            disabled={deleting}
+            onClick={() => {
+              setWord(null)
+              // A blocked delete still goes ahead once the other tabs close: keep saying so.
+              setProblem((p) => (p === 'blocked' ? p : null))
+            }}
+          >
             {t.deleteAll.cancel}
           </button>
         </form>
@@ -493,20 +516,16 @@ function DeleteAllSection() {
           className="danger"
           onClick={() => {
             setTyped('')
-            setState('confirm')
+            setProblem(null)
+            setWord({ word: t.deleteAll.word, locale })
           }}
         >
           {t.deleteAll.start}
         </button>
       )}
-      {state === 'failed' && (
+      {problem && (
         <p className="errors" role="alert">
-          {t.deleteAll.failed}
-        </p>
-      )}
-      {state === 'exportFailed' && (
-        <p className="errors" role="alert">
-          {t.backup.exportFailed}
+          {t.deleteAll[problem]}
         </p>
       )}
     </section>

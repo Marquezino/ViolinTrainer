@@ -69,3 +69,14 @@ export class VtDatabase extends Dexie {
 export function openDatabase(name: string = DB_NAME, options?: DexieOptions): VtDatabase {
   return new VtDatabase(name, options)
 }
+
+/**
+ * When another tab deletes or upgrades the database, closes this tab's connection (so that tab
+ * is not blocked) and calls `onGone`, normally a page reload: the screens shown are stale.
+ */
+export function closeOnVersionChange(db: VtDatabase, onGone: () => void): void {
+  db.on('versionchange', () => {
+    db.close()
+    onGone()
+  })
+}

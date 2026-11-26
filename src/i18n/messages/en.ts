@@ -216,7 +216,9 @@ export const en: Messages = {
     typeWord: (word) => `Type ${word} to confirm`,
     confirm: 'Delete everything',
     cancel: 'Cancel',
-    failed: 'The data could not be deleted, and nothing was changed. Close the app in other tabs and try again.',
+    failed: 'The data could not be deleted, and nothing was changed. Try again.',
+    blocked:
+      'The app is still open in another tab, so the data cannot be deleted yet. Close the app in the other tabs and try again; once they are closed, the deletion goes ahead.',
   },
 
   storage: {

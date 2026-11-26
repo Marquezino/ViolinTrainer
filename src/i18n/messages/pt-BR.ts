@@ -219,7 +219,9 @@ export const ptBR: Messages = {
     typeWord: (word) => `Digite ${word} para confirmar`,
     confirm: 'Apagar tudo',
     cancel: 'Cancelar',
-    failed: 'Não foi possível apagar os dados; nada foi alterado. Feche o app em outras abas e tente de novo.',
+    failed: 'Não foi possível apagar os dados; nada foi alterado. Tente de novo.',
+    blocked:
+      'O app ainda está aberto em outra aba, então os dados ainda não podem ser apagados. Feche o app nas outras abas e tente de novo; assim que elas fecharem, a exclusão continua.',
   },
 
   storage: {

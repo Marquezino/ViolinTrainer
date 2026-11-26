@@ -232,6 +232,8 @@ export interface Messages {
     confirm: string
     cancel: string
     failed: string
+    /** The delete waits for the app to close in other tabs; it goes ahead once they are closed. */
+    blocked: string
   }
 
   storage: {

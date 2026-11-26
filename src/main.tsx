@@ -7,7 +7,7 @@ import { detectLocale } from './i18n/locales'
 import { MESSAGES } from './i18n/messages'
 import { loadSavedLocale } from './i18n/saved-locale'
 import { syncBuiltinUnits } from './store/builtin'
-import { DB_NAME, openDatabase, type VtDatabase } from './store/db'
+import { closeOnVersionChange, DB_NAME, openDatabase, type VtDatabase } from './store/db'
 import { requestPersistentStorage } from './store/persistence'
 import { getSettings } from './store/profiles'
 import { DbProvider } from './ui/DbProvider'
@@ -29,6 +29,8 @@ async function startDatabase(): Promise<{ db: VtDatabase; storageAvailable: bool
 
 async function main(): Promise<void> {
   const { db, storageAvailable } = await startDatabase()
+  // Data deleted (or upgraded) in another tab: start again from it rather than show stale screens.
+  closeOnVersionChange(db, () => location.reload())
   await syncBuiltinUnits(db, Date.now())
   // Creates the settings row, so screens can read it inside live queries (which cannot write).
   await getSettings(db)

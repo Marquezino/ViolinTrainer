@@ -92,3 +92,71 @@ test('in Portuguese the word is APAGAR, and the saved language is deleted too', 
   // The browser is English: with the saved choice gone, the app opens in English again.
   await expect(page.getByRole('heading', { name: "Who's practising?" })).toBeVisible()
 })
+
+test('the word to type stays the one shown when the language changes mid-confirmation', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('button', { name: 'Delete all data…' }).click()
+  await page.getByRole('combobox', { name: 'Language' }).selectOption('pt-BR')
+  const section = page.getByRole('region', { name: 'Apagar todos os dados' })
+  const word = section.getByRole('textbox', { name: 'Digite DELETE para confirmar' })
+  const confirm = section.getByRole('button', { name: 'Apagar tudo' })
+  await word.fill('APAGAR')
+  await expect(confirm).toBeDisabled()
+  await word.fill('DELETE')
+  await expect(confirm).toBeEnabled()
+})
+
+test('other open tabs reload into the fresh app after the delete', async ({ page, context }) => {
+  await addProfile(page, 'Player A')
+  const other = await context.newPage()
+  await other.goto('/')
+  await expect(other.getByRole('button', { name: 'Player A' })).toBeVisible()
+  // Gone only if that tab reloads, rather than going on with the old page on an empty database.
+  await other.evaluate(() => ((window as unknown as { before: boolean }).before = true))
+
+  await page.getByRole('button', { name: '← Players' }).click()
+  await page.getByRole('button', { name: 'Settings' }).click()
+  const section = page.getByRole('region', { name: 'Delete all data' })
+  await section.getByRole('button', { name: 'Delete all data…' }).click()
+  await section.getByRole('textbox', { name: 'Type DELETE to confirm' }).fill('DELETE')
+  await section.getByRole('button', { name: 'Delete everything' }).click()
+
+  await expect(page.getByRole('button', { name: 'Add the first player' })).toBeVisible()
+  await expect(other.getByRole('button', { name: 'Add the first player' })).toBeVisible()
+  await expect(other.getByRole('button', { name: 'Player A' })).toHaveCount(0)
+  expect(await other.evaluate(() => (window as unknown as { before?: boolean }).before)).toBeUndefined()
+})
+
+test('a delete blocked by another tab says so, re-enables the form, and finishes once that tab closes', async ({
+  page,
+  context,
+}) => {
+  await addProfile(page, 'Player A')
+  // A connection that ignores requests to close, like a tab running an older version of the app.
+  const old = await context.newPage()
+  await old.goto('/manifest.webmanifest')
+  await old.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        const request = indexedDB.open('violin-trainer')
+        request.onsuccess = () => {
+          ;(window as unknown as { held: IDBDatabase }).held = request.result
+          resolve()
+        }
+      }),
+  )
+
+  await page.getByRole('button', { name: '← Players' }).click()
+  await page.getByRole('button', { name: 'Settings' }).click()
+  const section = page.getByRole('region', { name: 'Delete all data' })
+  await section.getByRole('button', { name: 'Delete all data…' }).click()
+  await section.getByRole('textbox', { name: 'Type DELETE to confirm' }).fill('DELETE')
+  await section.getByRole('button', { name: 'Delete everything' }).click()
+  await expect(section.getByRole('alert')).toContainText('still open in another tab')
+  await expect(section.getByRole('button', { name: 'Delete everything' })).toBeEnabled()
+  await expect(section.getByRole('textbox', { name: 'Type DELETE to confirm' })).toHaveValue('DELETE')
+
+  await old.evaluate(() => (window as unknown as { held: IDBDatabase }).held.close())
+  await expect(page.getByRole('button', { name: 'Add the first player' })).toBeVisible()
+})
