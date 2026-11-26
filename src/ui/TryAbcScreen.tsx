@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import abcjs from 'abcjs'
 import { useI18n } from '../i18n/I18nProvider'
-import { isLocale, LOCALE_LABELS, LOCALES } from '../i18n/locales'
 import { abcProblemText } from '../i18n/messages'
 import type { SessionConfig } from '../practice/wait-session'
 import { parseExercise } from '../score/abc'
 import type { Exercise } from '../score/exercise'
+import { LanguageMenu } from './LanguageMenu'
 import { PracticeScreen } from './PracticeScreen'
 
 function customStart(title: string): string {
@@ -28,7 +28,7 @@ function AbcPreview({ abc, label }: { abc: string; label: string }) {
 
 /** The Plan 1 "Your own ABC" box. Its runs are practice only: nothing is saved. */
 export function TryAbcScreen({ config, onBack }: { config: SessionConfig; onBack: () => void }) {
-  const { locale, t, setLocale, format } = useI18n()
+  const { t, format } = useI18n()
   // Only the initial text follows the language: switching language never replaces what was typed.
   const [abc, setAbc] = useState(() => customStart(t.picker.starterTitle))
   const [playing, setPlaying] = useState<Exercise | null>(null)
@@ -52,19 +52,7 @@ export function TryAbcScreen({ config, onBack }: { config: SessionConfig; onBack
           {t.picker.back}
         </button>
         <h1>{t.picker.ownAbcHeading}</h1>
-        <select
-          aria-label={t.languageLabel}
-          value={locale}
-          onChange={(e) => {
-            if (isLocale(e.target.value)) setLocale(e.target.value)
-          }}
-        >
-          {LOCALES.map((l) => (
-            <option key={l} value={l}>
-              {LOCALE_LABELS[l]}
-            </option>
-          ))}
-        </select>
+        <LanguageMenu />
       </header>
       <section>
         <textarea

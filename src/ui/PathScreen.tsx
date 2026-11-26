@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { sampleIdOf, unitKeyOf } from '../exercises/builtin-units'
 import { useI18n } from '../i18n/I18nProvider'
-import { isLocale, LOCALE_LABELS, LOCALES } from '../i18n/locales'
 import type { Formatters, Messages } from '../i18n/messages'
 import type { Stars } from '../practice/scoring'
 import { localDay } from '../progress/days'
@@ -16,6 +15,7 @@ import { updateProfile } from '../store/profiles'
 import type { ExerciseRecord, Unit } from '../store/records'
 import { repairStreak } from '../store/repairs'
 import { useDb } from './DbProvider'
+import { LanguageMenu } from './LanguageMenu'
 import { STREAK_SYMBOLS, StreakBadges } from './StreakBadges'
 
 const MAX_STARS = 3
@@ -33,7 +33,7 @@ function unitTitle(t: Messages, unit: Unit): string {
 
 export function PathScreen(props: { profileId: string; onBack: () => void; onLeaderboard: () => void; onPlay: (exerciseId: string) => void }) {
   const { profileId, onBack, onLeaderboard, onPlay } = props
-  const { locale, t, setLocale, format } = useI18n()
+  const { t, format } = useI18n()
   const f = format(false)
   const db = useDb()
   const data = useLiveQuery(async () => {
@@ -80,22 +80,7 @@ export function PathScreen(props: { profileId: string; onBack: () => void; onLea
         <button type="button" onClick={onLeaderboard}>
           {t.leaderboard.open}
         </button>
-        <select
-          aria-label={t.languageLabel}
-          value={locale}
-          onChange={(e) => {
-            const chosen = e.target.value
-            if (!isLocale(chosen)) return
-            setLocale(chosen)
-            void updateProfile(db, profileId, { locale: chosen }, Date.now())
-          }}
-        >
-          {LOCALES.map((l) => (
-            <option key={l} value={l}>
-              {LOCALE_LABELS[l]}
-            </option>
-          ))}
-        </select>
+        <LanguageMenu onChosen={(chosen) => void updateProfile(db, profileId, { locale: chosen }, Date.now())} />
       </header>
 
       <section className="today panel">

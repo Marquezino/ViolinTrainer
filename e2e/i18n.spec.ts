@@ -50,6 +50,26 @@ test('typed ABC survives a language switch and its problems are translated', asy
   await expect(page.getByRole('heading', { name: 'Sem título' })).toBeVisible()
 })
 
+test('the first screen has a language menu, and the choice survives a reload', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: "Who's practising?" })).toBeVisible()
+  await page.getByRole('combobox', { name: 'Language' }).selectOption('pt-BR')
+  await expect(page.getByRole('heading', { name: 'Quem vai praticar?' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Adicionar o primeiro jogador' })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Quem vai praticar?' })).toBeVisible()
+  await expect(page.getByRole('combobox', { name: 'Idioma' })).toHaveValue('pt-BR')
+})
+
+test('settings has a language menu', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('combobox', { name: 'Language' }).selectOption('pt-BR')
+  await expect(page.getByRole('heading', { name: 'Configurações' })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Quem vai praticar?' })).toBeVisible()
+})
+
 test.describe('Portuguese browser', () => {
   test.use({ locale: 'pt-BR' })
   test('picks Portuguese on first visit', async ({ page }) => {

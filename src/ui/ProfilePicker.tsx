@@ -8,6 +8,7 @@ import type { Profile } from '../store/records'
 import { AvatarIcon } from './Avatar'
 import { BackupReminder } from './BackupReminder'
 import { useDb } from './DbProvider'
+import { LanguageMenu } from './LanguageMenu'
 import { StreakBadges } from './StreakBadges'
 
 export function ProfilePicker(props: { onChoose: (profile: Profile) => void; onSettings: () => void; onLeaderboard: () => void }) {
@@ -32,6 +33,7 @@ export function ProfilePicker(props: { onChoose: (profile: Profile) => void; onS
         <button type="button" onClick={onSettings}>
           {t.profiles.settings}
         </button>
+        <LanguageMenu />
       </header>
       <BackupReminder />
       {cards && cards.length === 0 && (

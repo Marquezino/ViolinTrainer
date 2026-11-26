@@ -26,6 +26,7 @@ import type { Avatar, Profile } from '../store/records'
 import { AVATAR_SYMBOLS, AVATARS } from './Avatar'
 import { useDb } from './DbProvider'
 import { downloadBackup } from './download-backup'
+import { LanguageMenu } from './LanguageMenu'
 
 export const A4_MIN = 415
 export const A4_MAX = 466
@@ -59,6 +60,7 @@ export function SettingsScreen(props: { onBack: () => void; onTryAbc: () => void
           {t.settings.back}
         </button>
         <h1>{t.settings.heading}</h1>
+        <LanguageMenu />
       </header>
 
       <section>
