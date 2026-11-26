@@ -175,7 +175,7 @@ Earnings are computed from attempts and goal settings, never stored. They theref
 - **When it is offered:** only on the day right after a streak broke, meaning yesterday was its third missed day in a row. The path shows the broken streak's old number with "Repair for N ♪", where N is the cost below.
 - **What it does:** yesterday becomes a repaired day, so the old stretch joins today's again. A repaired day is not counted as practised.
 - **Easy streak:** **20 ♪**, and it repairs only the easy streak.
-- **Practice streak:** **40 ♪**. It repairs the practice streak and, if the easy streak broke on the same day, the easy streak too, at no extra cost.
+- **Practice streak:** **40 ♪**. It repairs the practice streak and, unless that day was already a practice day, also marks it repaired for the easy streak at no extra cost. Otherwise a practice repair could leave the easy streak shorter than the practice streak.
 - **Not enough notes:** the offer shows how many are missing.
 - **After the day passes:** the offer disappears.
 - **Undoing:** a repair can't be undone.
