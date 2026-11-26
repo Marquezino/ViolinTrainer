@@ -7,5 +7,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     include: ['src/**/*.test.ts'],
+    // A zone with daylight saving, so day arithmetic is tested across DST changes.
+    env: { TZ: 'America/New_York' },
   },
 })
