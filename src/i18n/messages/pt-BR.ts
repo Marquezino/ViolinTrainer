@@ -16,6 +16,7 @@ export const ptBR: Messages = {
   noteNames: SOLFEGE_NOTE_NAMES,
   languageLabel: 'Idioma',
   untitled: 'Sem título',
+  startupFailed: 'O Violin Trainer não conseguiu abrir. Recarregue a página.',
 
   picker: {
     back: '← Configurações',

@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { I18nProvider } from './i18n/I18nProvider'
+import { detectLocale } from './i18n/locales'
+import { MESSAGES } from './i18n/messages'
+import { loadSavedLocale } from './i18n/saved-locale'
 import { syncBuiltinUnits } from './store/builtin'
 import { DB_NAME, openDatabase, type VtDatabase } from './store/db'
 import { requestPersistentStorage } from './store/persistence'
@@ -42,4 +45,22 @@ async function main(): Promise<void> {
   )
 }
 
-void main()
+const STARTUP_FAILED_FALLBACK = 'Violin Trainer could not start. Please reload the page.'
+
+/** A plain line instead of a blank page, in the saved or browser language when possible. */
+function showStartupError(e: unknown): void {
+  console.error('Starting the app failed', e)
+  let text = STARTUP_FAILED_FALLBACK
+  try {
+    text = MESSAGES[detectLocale(loadSavedLocale(), navigator.languages ?? [])].startupFailed
+  } catch {
+    // Keep the English line.
+  }
+  const root = document.getElementById('root') ?? document.body
+  const line = document.createElement('p')
+  line.setAttribute('role', 'alert')
+  line.textContent = text
+  root.replaceChildren(line)
+}
+
+main().catch(showStartupError)

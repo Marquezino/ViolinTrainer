@@ -26,6 +26,8 @@ export interface Messages {
   languageLabel: string
   /** Title shown for an exercise without a T: line. */
   untitled: string
+  /** Shown instead of the app when it could not start. */
+  startupFailed: string
 
   /** The "Try your own ABC" screen (it was the Plan 1 exercise picker). */
   picker: {

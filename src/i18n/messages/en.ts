@@ -16,6 +16,7 @@ export const en: Messages = {
   noteNames: LETTER_NOTE_NAMES,
   languageLabel: 'Language',
   untitled: 'Untitled',
+  startupFailed: 'Violin Trainer could not start. Please reload the page.',
 
   picker: {
     back: '← Settings',
