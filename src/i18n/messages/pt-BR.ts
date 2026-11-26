@@ -104,5 +104,15 @@ export const ptBR: Messages = {
     'd-major-scale': 'Escala de Ré maior, uma oitava',
     'repeated-notes': 'Notas repetidas (levante ou troque o arco entre as notas)',
     twinkle: 'Brilha, brilha, estrelinha (tradicional)',
+    'lightly-row': 'Remar, remar (tradicional)',
+    'song-of-the-wind': 'Canção do vento (tradicional)',
+    'go-tell-aunt-rhody': 'Vá contar à tia Rhody (tradicional)',
+    'o-come-little-children': 'Vinde, meninos (tradicional)',
+    'may-song': 'Canção de maio (tradicional)',
+    'long-long-ago': 'Há muito tempo (tradicional)',
+  },
+  unitTitles: {
+    'first-steps': 'Primeiros passos',
+    'traditional-tunes': 'Melodias tradicionais',
   },
 }

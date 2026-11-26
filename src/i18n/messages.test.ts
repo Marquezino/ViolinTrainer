@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { BUILTIN_UNITS } from '../exercises/builtin-units'
 import { SAMPLE_EXERCISES } from '../exercises/samples'
 import type { AbcProblem, AbcProblemCode } from '../score/exercise'
 import { formatters } from './format'
@@ -46,6 +47,7 @@ describe.each(LOCALES)('%s messages', (locale) => {
 
   test('every built-in exercise has a title', () => {
     for (const { id } of SAMPLE_EXERCISES) expect(MESSAGES[locale].sampleTitles[id].trim()).not.toBe('')
+    for (const { key } of BUILTIN_UNITS) expect(MESSAGES[locale].unitTitles[key].trim()).not.toBe('')
   })
 })
 

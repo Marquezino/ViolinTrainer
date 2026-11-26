@@ -1,4 +1,5 @@
 import type { MicrophoneError, VoiceProcessing } from '../../audio/microphone'
+import type { BuiltinUnitId } from '../../exercises/builtin-units'
 import type { SampleId } from '../../exercises/samples'
 import type { NoteNames, ToleranceProblem } from '../../music/pitch'
 import type { AbcProblem, AbcProblemCode } from '../../score/exercise'
@@ -69,4 +70,5 @@ export interface Messages {
   abcProblems: { [K in AbcProblemCode]: (p: Extract<AbcProblem, { code: K }>, f: Formatters) => string }
   toleranceProblems: Record<ToleranceProblem, string>
   sampleTitles: Record<SampleId, string>
+  unitTitles: Record<BuiltinUnitId, string>
 }

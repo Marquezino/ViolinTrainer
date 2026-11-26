@@ -101,5 +101,15 @@ export const en: Messages = {
     'd-major-scale': 'D major scale, one octave',
     'repeated-notes': 'Repeated notes (lift or change the bow between notes)',
     twinkle: 'Twinkle, Twinkle, Little Star (traditional)',
+    'lightly-row': 'Lightly Row (traditional)',
+    'song-of-the-wind': 'Song of the Wind (traditional)',
+    'go-tell-aunt-rhody': 'Go Tell Aunt Rhody (traditional)',
+    'o-come-little-children': 'O Come, Little Children (traditional)',
+    'may-song': 'May Song (traditional)',
+    'long-long-ago': 'Long, Long Ago (traditional)',
+  },
+  unitTitles: {
+    'first-steps': 'First steps',
+    'traditional-tunes': 'Traditional tunes',
   },
 }
