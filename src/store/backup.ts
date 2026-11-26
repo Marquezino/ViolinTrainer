@@ -1,6 +1,7 @@
 import { localDay } from '../progress/days'
 import { SCHEMA_VERSION, TABLE_NAMES, type TableName, type VtDatabase } from './db'
-import { updateSettings } from './profiles'
+import { DEFAULT_SETTINGS, updateSettings } from './profiles'
+import type { Settings } from './records'
 
 export const BACKUP_FORMAT = 'violin-trainer-backup'
 
@@ -11,10 +12,10 @@ export interface BackupFile {
   tables: Record<TableName, unknown[]>
 }
 
-// Every table, soft-deleted rows included. lastBackupAt is set first so the
-// exported settings row already carries it.
+// Every table, soft-deleted rows included. Writes nothing: the exported
+// settings row carries lastBackupAt = now, and the stored one is set by
+// markBackedUp only once the file was actually saved.
 export async function exportBackup(db: VtDatabase, now: number): Promise<BackupFile> {
-  await updateSettings(db, { lastBackupAt: now })
   const tables = {} as Record<TableName, unknown[]>
   await db.transaction(
     'r',
@@ -23,7 +24,17 @@ export async function exportBackup(db: VtDatabase, now: number): Promise<BackupF
       for (const name of TABLE_NAMES) tables[name] = await db.table(name).toArray()
     },
   )
+  const settings = (tables.settings as Settings[]).find((s) => s.id === 'app')
+  tables.settings = [
+    ...(tables.settings as Settings[]).filter((s) => s.id !== 'app'),
+    { ...(settings ?? { id: 'app', ...DEFAULT_SETTINGS }), lastBackupAt: now },
+  ]
   return { format: BACKUP_FORMAT, schemaVersion: SCHEMA_VERSION, exportedAt: now, tables }
+}
+
+/** Records that a backup file was saved at `now`. */
+export async function markBackedUp(db: VtDatabase, now: number): Promise<void> {
+  await updateSettings(db, { lastBackupAt: now })
 }
 
 export function backupFileName(now: number): string {

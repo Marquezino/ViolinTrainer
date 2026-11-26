@@ -1,4 +1,4 @@
-import { backupFileName, exportBackup } from '../store/backup'
+import { backupFileName, exportBackup, markBackedUp } from '../store/backup'
 import type { VtDatabase } from '../store/db'
 
 /** Saves a file through an object URL and a temporary link. */
@@ -12,8 +12,13 @@ function downloadJson(name: string, data: unknown): void {
   setTimeout(() => URL.revokeObjectURL(url), 10_000)
 }
 
-/** Exports every table to a JSON file and records the backup time. */
+/**
+ * Exports every table to a JSON file, then records the backup time. Throws,
+ * recording nothing, when the tables cannot be read or the file not made.
+ */
 export async function downloadBackup(db: VtDatabase): Promise<void> {
   const now = Date.now()
-  downloadJson(backupFileName(now), await exportBackup(db, now))
+  const backup = await exportBackup(db, now)
+  downloadJson(backupFileName(now), backup)
+  await markBackedUp(db, now)
 }

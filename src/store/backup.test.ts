@@ -1,8 +1,8 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, expect, test } from 'vitest'
 import { openDatabase, SCHEMA_VERSION, TABLE_NAMES, type VtDatabase } from './db'
-import { backupFileName, BACKUP_FORMAT, exportBackup, parseBackup, replaceWithBackup } from './backup'
-import { createProfile, deleteProfile, getSettings } from './profiles'
+import { backupFileName, BACKUP_FORMAT, exportBackup, markBackedUp, parseBackup, replaceWithBackup } from './backup'
+import { createProfile, deleteProfile, getSettings, updateSettings } from './profiles'
 
 let db: VtDatabase
 beforeEach(() => {
@@ -34,7 +34,8 @@ test('round trip: export then import into an empty database gives identical tabl
   const other = openDatabase(`test-${crypto.randomUUID()}`)
   await replaceWithBackup(other, parsed.backup)
   for (const t of TABLE_NAMES) {
-    expect(await other.table(t).toArray()).toEqual(await db.table(t).toArray())
+    expect(await other.table(t).toArray()).toEqual(backup.tables[t])
+    if (t !== 'settings') expect(await other.table(t).toArray()).toEqual(await db.table(t).toArray())
   }
 })
 
@@ -47,9 +48,19 @@ test('soft-deleted rows are included', async () => {
   expect(parsed.ok && parsed.profiles).toBe(0)
 })
 
-test('export sets lastBackupAt', async () => {
+test('the exported settings carry lastBackupAt = now, but exporting alone stores nothing', async () => {
+  const before = await exportBackup(db, NOW)
+  expect(before.tables.settings).toEqual([expect.objectContaining({ id: 'app', lastBackupAt: NOW })])
+  expect((await getSettings(db)).lastBackupAt).toBeNull()
+
+  await updateSettings(db, { lastBackupAt: NOW - 1000, a4Hz: 442 })
   const backup = await exportBackup(db, NOW)
-  expect((backup.tables.settings[0] as { lastBackupAt: number }).lastBackupAt).toBe(NOW)
+  expect(backup.tables.settings).toEqual([expect.objectContaining({ lastBackupAt: NOW, a4Hz: 442 })])
+  expect((await getSettings(db)).lastBackupAt).toBe(NOW - 1000)
+})
+
+test('markBackedUp records the backup time', async () => {
+  await markBackedUp(db, NOW)
   expect((await getSettings(db)).lastBackupAt).toBe(NOW)
 })
 

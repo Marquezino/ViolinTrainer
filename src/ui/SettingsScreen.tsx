@@ -341,7 +341,16 @@ function BackupSection({ onRestored }: { onRestored: () => void }) {
     <section>
       <h2>{t.backup.heading}</h2>
       <p>
-        <button type="button" onClick={() => void downloadBackup(db)}>
+        <button
+          type="button"
+          onClick={() => {
+            setState({ step: 'idle' })
+            downloadBackup(db).catch((e: unknown) => {
+              console.error('Exporting the backup failed', e)
+              setState({ step: 'failed' })
+            })
+          }}
+        >
           {t.backup.export}
         </button>
       </p>
