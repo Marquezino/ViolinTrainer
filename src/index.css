@@ -52,6 +52,14 @@ main {
   padding: 16px;
 }
 
+/* Children tap these on a tablet: at least 48 px high everywhere. */
+button,
+select,
+input[type='text'],
+input[type='number'] {
+  min-height: 48px;
+}
+
 button {
   font: inherit;
   padding: 8px 16px;
@@ -78,18 +86,6 @@ textarea {
   color: var(--text);
 }
 
-.exercise-list {
-  list-style: none;
-  padding: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.exercise-list button {
-  width: 100%;
-  text-align: left;
-}
-
 .errors,
 .panel-error {
   color: var(--red);
@@ -103,7 +99,7 @@ textarea {
   color: var(--muted);
 }
 
-.picker-header {
+.screen-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -283,4 +279,568 @@ select {
 /* The practice header already shows the title, translated for built-in exercises; the picker preview keeps it. */
 .practice .score .abcjs-title {
   display: none;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+button.danger {
+  background: var(--red);
+  border-color: var(--red);
+  color: #ffffff;
+}
+
+button.big {
+  font-size: 1.3rem;
+  padding: 16px 32px;
+}
+
+input[type='text'],
+input[type='number'] {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.screen-header h1 {
+  margin: 0;
+  flex: 1;
+  font-size: 1.6rem;
+}
+
+.actions,
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.confirm p {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.storage-banner {
+  margin: 0;
+  padding: 12px 16px;
+  background: var(--warning-text);
+  color: #ffffff;
+  text-align: center;
+}
+
+/* Profile picker */
+
+.picker-empty {
+  margin: 48px 0;
+  text-align: center;
+}
+
+.profile-cards {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.profile-card {
+  width: 100%;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 16px;
+}
+
+.profile-card .avatar {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.profile-name {
+  font-size: 1.3rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.streaks {
+  display: inline-flex;
+  gap: 16px;
+  font-size: 1.1rem;
+}
+
+/* Path */
+
+.today {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.today-details p {
+  margin: 4px 0;
+}
+
+.goal-time {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.week-dots {
+  letter-spacing: 4px;
+  color: var(--green);
+}
+
+.goal-ring {
+  width: 120px;
+  height: 120px;
+  flex: none;
+}
+
+.goal-ring circle {
+  fill: none;
+  stroke-width: 12;
+}
+
+.goal-ring-track {
+  stroke: var(--border);
+}
+
+.goal-ring-fill {
+  stroke: var(--accent);
+  stroke-linecap: round;
+}
+
+.goal-ring-done .goal-ring-fill {
+  stroke: var(--green);
+}
+
+.goal-ring-text {
+  fill: var(--text);
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.repair-offer {
+  border-color: var(--accent);
+}
+
+.path-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.path-item {
+  width: 100%;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.path-title {
+  flex: 1;
+}
+
+.path-next {
+  border: 2px solid var(--accent);
+}
+
+.path-badge {
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 0.85rem;
+}
+
+.path-stars {
+  color: var(--yellow);
+  font-size: 1.3rem;
+  white-space: nowrap;
+}
+
+/* Tuning: tablet-first, big string tiles that stay in one row even in portrait */
+
+.tuning-strings {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.tuning-string {
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  transition: border-color 150ms, color 150ms;
+}
+
+.tuning-string-current {
+  border-color: var(--current);
+  color: var(--text);
+}
+
+.tuning-string-green {
+  border-color: var(--green);
+  background: var(--band-green);
+}
+
+.tuning .needle-scale {
+  height: 40px;
+  border-radius: 20px;
+}
+
+.tuning .needle-tuning .needle-pointer {
+  background: var(--current);
+}
+
+.tuning-actions {
+  margin: 24px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tuning-actions label.checkbox {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.tuning-actions label.checkbox input {
+  width: 28px;
+  height: 28px;
+}
+
+.tuning-actions button {
+  min-width: 160px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tuning-string {
+    transition: none;
+  }
+}
+
+/* Practice */
+
+.goal-banner {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--band-green);
+  font-weight: 600;
+}
+
+.celebration {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  z-index: 10;
+  width: min(480px, calc(100% - 32px));
+  padding: 16px 48px 16px 24px;
+  border: 2px solid var(--accent);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transform: translateX(-50%);
+  animation: celebration-pop 400ms ease-out;
+}
+
+.celebration-line {
+  margin: 4px 0;
+}
+
+.celebration-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 48px;
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+}
+
+@keyframes celebration-pop {
+  from {
+    transform: translateX(-50%) scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .celebration {
+    animation: none;
+  }
+}
+
+/* Settings: laptop-first */
+
+.settings label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings label.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings label.checkbox input {
+  width: 24px;
+  height: 24px;
+}
+
+.profile-form,
+.add-profile {
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.profile-form form,
+.add-profile {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+
+.profile-form legend {
+  font-weight: 600;
+}
+
+.profile-form .actions,
+.profile-form .errors,
+.add-profile .errors {
+  grid-column: 1 / -1;
+}
+
+.settings section {
+  margin: 32px 0;
+}
+
+.saved {
+  color: var(--green);
+}
+
+.a4-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+
+.a4-form .errors {
+  flex-basis: 100%;
+}
+
+.file-input input {
+  font: inherit;
+}
+
+/* Leaderboard */
+
+.leaderboard-subtitle {
+  margin: 8px 0 16px;
+}
+
+.leaderboard-rows {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.leaderboard-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  min-height: 64px;
+}
+
+.leaderboard-place {
+  font-size: 1.8rem;
+  font-weight: 700;
+  min-width: 48px;
+  text-align: center;
+}
+
+.leaderboard-row .avatar {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.leaderboard-row .profile-name {
+  flex: 1 1 8ch;
+}
+
+.leaderboard-row .week-dots {
+  margin: 0;
+  letter-spacing: 0.15em;
+}
+
+.backup-reminder {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.backup-reminder p {
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.backup-reminder button {
+  min-height: 48px;
+}
+
+/* Help tips: a round "?" with a 48 px tap target, and its hint */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label,
+.with-help {
+  display: flex;
+  align-items: center;
+}
+
+/* As tall as the help button, so labels with and without one line up. */
+.field-label {
+  min-height: 48px;
+}
+
+.help-tip {
+  position: relative;
+  display: inline-flex;
+}
+
+button.help-tip-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.help-tip-button:focus-visible {
+  outline: 3px solid var(--current);
+  outline-offset: -4px;
+}
+
+.help-tip-circle {
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}
+
+.help-tip-text {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  left: 50%;
+  transform: translateX(calc(-50% + var(--shift, 0px)));
+  width: max-content;
+  max-width: min(300px, calc(100vw - 16px));
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.9rem;
+  font-weight: normal;
+  line-height: 1.35;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.help-tip-text[hidden] {
+  display: none;
+}
+
+.with-help h2 {
+  margin: 0;
+}
+
+div.with-help {
+  margin: 20px 0 12px;
+}
+
+.cents-question {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* Delete all data: the danger zone at the bottom of settings */
+
+.settings section.danger-zone {
+  margin-top: 48px;
+  padding: 16px;
+  border: 2px solid var(--red);
+  border-radius: 12px;
+}
+
+.danger-zone h2 {
+  margin-top: 0;
+  color: var(--red);
 }

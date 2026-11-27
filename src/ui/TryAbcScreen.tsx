@@ -1,17 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import abcjs from 'abcjs'
-import { SAMPLE_EXERCISES, type SampleId } from '../exercises/samples'
 import { useI18n } from '../i18n/I18nProvider'
-import { isLocale, LOCALE_LABELS, LOCALES } from '../i18n/locales'
 import { abcProblemText } from '../i18n/messages'
+import type { SessionConfig } from '../practice/wait-session'
 import { parseExercise } from '../score/abc'
 import type { Exercise } from '../score/exercise'
-
-const SAMPLES: { id: SampleId; exercise: Exercise }[] = SAMPLE_EXERCISES.map(({ id, abc }) => {
-  const result = parseExercise(abc)
-  if (!result.ok) throw new Error(`Built-in exercise ${id} is invalid: ${result.errors.map((e) => e.code).join('; ')}`)
-  return { id, exercise: result.exercise }
-})
+import { LanguageMenu } from './LanguageMenu'
+import { PracticeScreen } from './PracticeScreen'
 
 function customStart(title: string): string {
   return `X:1
@@ -31,44 +26,35 @@ function AbcPreview({ abc, label }: { abc: string; label: string }) {
   return <div className="score score-preview" ref={containerRef} aria-label={label} />
 }
 
-export function ExercisePicker({ onPick }: { onPick: (exercise: Exercise, sampleId: SampleId | null) => void }) {
-  const { locale, t, setLocale, format } = useI18n()
+/** The Plan 1 "Your own ABC" box. Its runs are practice only: nothing is saved. */
+export function TryAbcScreen({ config, onBack }: { config: SessionConfig; onBack: () => void }) {
+  const { t, format } = useI18n()
   // Only the initial text follows the language: switching language never replaces what was typed.
   const [abc, setAbc] = useState(() => customStart(t.picker.starterTitle))
+  const [playing, setPlaying] = useState<Exercise | null>(null)
   const parsed = parseExercise(abc)
+
+  if (playing) {
+    return (
+      <PracticeScreen
+        exercise={playing}
+        title={playing.title ?? t.untitled}
+        config={config}
+        onExit={() => setPlaying(null)}
+      />
+    )
+  }
 
   return (
     <main className="picker">
-      <header className="picker-header">
-        <h1>{t.appName}</h1>
-        <select
-          aria-label={t.languageLabel}
-          value={locale}
-          onChange={(e) => {
-            if (isLocale(e.target.value)) setLocale(e.target.value)
-          }}
-        >
-          {LOCALES.map((l) => (
-            <option key={l} value={l}>
-              {LOCALE_LABELS[l]}
-            </option>
-          ))}
-        </select>
+      <header className="screen-header">
+        <button type="button" onClick={onBack}>
+          {t.picker.back}
+        </button>
+        <h1>{t.picker.ownAbcHeading}</h1>
+        <LanguageMenu />
       </header>
       <section>
-        <h2>{t.picker.exercisesHeading}</h2>
-        <ul className="exercise-list">
-          {SAMPLES.map(({ id, exercise }) => (
-            <li key={id}>
-              <button type="button" onClick={() => onPick(exercise, id)}>
-                {t.sampleTitles[id]}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-      <section>
-        <h2>{t.picker.ownAbcHeading}</h2>
         <textarea
           value={abc}
           onChange={(e) => setAbc(e.target.value)}
@@ -84,7 +70,7 @@ export function ExercisePicker({ onPick }: { onPick: (exercise: Exercise, sample
                 {abcProblemText(t, w, format(parsed.exercise.preferFlats))}
               </p>
             ))}
-            <button type="button" className="primary" onClick={() => onPick(parsed.exercise, null)}>
+            <button type="button" className="primary" onClick={() => setPlaying(parsed.exercise)}>
               {t.picker.practiceThis}
             </button>
           </>

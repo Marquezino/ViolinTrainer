@@ -1,18 +1,26 @@
 import { LETTER_NOTE_NAMES } from '../../music/pitch'
+import { STREAK_SYMBOLS } from '../streak-symbols'
 import type { Formatters, Messages } from './types'
 
 const count = (n: number, one: string, other: string, f: Formatters) =>
   `${f.number(n)} ${f.plural(n) === 'one' ? one : other}`
 const at = (offset: number, f: Formatters) => `at character ${f.number(offset)}`
+/** Practice time as m:ss, rounded down: a few seconds already show. */
+const clock = (ms: number) => {
+  const s = Math.floor(ms / 1000)
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+const STREAK_NAMES = { easy: 'playing streak', practice: 'goal streak' } as const
 
 export const en: Messages = {
   appName: 'Violin Trainer',
   noteNames: LETTER_NOTE_NAMES,
   languageLabel: 'Language',
   untitled: 'Untitled',
+  startupFailed: 'Violin Trainer could not start. Please reload the page.',
 
   picker: {
-    exercisesHeading: 'Exercises',
+    back: '← Settings',
     ownAbcHeading: 'Your own ABC',
     starterTitle: 'My exercise',
     abcLabel: 'ABC notation',
@@ -21,7 +29,11 @@ export const en: Messages = {
   },
 
   practice: {
-    back: '← Exercises',
+    back: '← Back',
+    backToPath: '← Path',
+    backToPathButton: 'Back to path',
+    goalReached: "Today's goal reached! 🎉 Keep going if you like.",
+    today: (ms, goal, f) => `Today: ${clock(ms)} of ${f.number(goal)} min`,
     startPrompt: 'When you press Start, stay quiet for two seconds while the app listens to the room.',
     start: 'Start',
     tryAgain: 'Try again',
@@ -47,6 +59,175 @@ export const en: Messages = {
     inTune: 'In tune',
     flatLabel: 'flat',
     sharpLabel: 'sharp',
+  },
+
+  tuning: {
+    heading: 'Tune your violin',
+    intro: 'Play each open string. Turn the peg or the fine tuner until the needle is green. The string you are playing lights up.',
+    stringsLabel: 'Open strings',
+    listen: 'Start listening',
+    prompt: 'Play an open string',
+    skip: 'Skip',
+    ready: 'Ready',
+    dontShowAgain: "Don't show before practice",
+  },
+
+  leaderboard: {
+    heading: 'This week',
+    open: '🏆 This week',
+    back: '← Back',
+    empty: 'Add a player in Settings to start the weekly board.',
+    subtitle: 'Ranked by days the goal was reached, Monday to Sunday.',
+    placeLabel: (place, f) => `Place ${f.number(place)}`,
+    goalDays: (days, f) => `${count(days, 'goal day', 'goal days', f)}`,
+    runs: (runs, f) => `${count(runs, 'finished run', 'finished runs', f)}`,
+  },
+
+  profiles: {
+    heading: "Who's practising?",
+    addFirst: 'Add the first player',
+    settings: '⚙ Settings',
+    avatars: {
+      violin: 'violin',
+      note: 'musical note',
+      clef: 'score',
+      star: 'star',
+      sun: 'sun',
+      moon: 'moon',
+      bird: 'bird',
+      cat: 'cat',
+      dog: 'dog',
+      flower: 'flower',
+      tree: 'tree',
+      heart: 'heart',
+    },
+  },
+
+  path: {
+    back: '← Players',
+    todayTime: (ms, goal, f) => `${clock(ms)} of ${f.number(goal)} min`,
+    goalRingLabel: (ms, goal, f) => `Today's practice: ${clock(ms)} of ${count(goal, 'minute', 'minutes', f)}`,
+    weekLabel: (days, f) => `Goal reached on ${count(days, 'day', 'days', f)} this week`,
+    locked: 'Locked',
+    next: 'Next',
+    empty: 'There are no exercises yet. Ask a grown-up to add some in the settings.',
+    brokenExercise: 'This exercise cannot be played: its music has a writing error.',
+  },
+
+  streaks: {
+    names: STREAK_NAMES,
+    label: (streak, days, f) => `${streak === 'easy' ? 'Playing streak' : 'Goal streak'}: ${count(days, 'day', 'days', f)}`,
+  },
+
+  notes: {
+    balanceLabel: (n, f) => `${count(n, 'note', 'notes', f)} for repairing streaks`,
+    broke: (streak) => `Your ${STREAK_NAMES[streak]} broke yesterday.`,
+    repairOffer: (restores, icon, cost, f) => `Repair to ${f.number(restores)} ${icon} for ${f.number(cost)} ♪`,
+    missing: (n, f) => `You need ${count(n, 'more note', 'more notes', f)}.`,
+    confirm: (cost, f) => `Spend ${f.number(cost)} ♪ to repair yesterday? This can't be undone.`,
+    confirmYes: 'Yes, repair',
+    cancel: 'Cancel',
+    errors: {
+      noOffer: 'This repair is no longer available.',
+      notAffordable: 'There are not enough notes for this repair.',
+      other: 'The repair could not be saved. Try again.',
+    },
+  },
+
+  celebrations: {
+    goalReached: "You reached today's goal! 🎉",
+    streakMilestone: (streak, days, f) => `${f.number(days)}-day ${STREAK_NAMES[streak]}! ${STREAK_SYMBOLS[streak]}`,
+    newBestStars: (stars, f) => `New best: ${count(stars, 'star', 'stars', f)}!`,
+    dismiss: 'Close',
+  },
+
+  settings: {
+    heading: 'Settings',
+    back: '← Players',
+    playersHeading: 'Players',
+    newPlayerName: 'New player name',
+    avatar: 'Picture',
+    addPlayer: 'Add player',
+    nameRequired: 'Type a name first.',
+    name: 'Name',
+    goal: 'Daily goal (minutes)',
+    greenCents: 'Green (cents)',
+    yellowCents: 'Yellow (cents)',
+    skipTuning: 'Skip the tuning screen',
+    save: 'Save',
+    saved: 'Saved.',
+    deletePlayer: 'Delete player',
+    deleteConfirm: (name) => `Delete ${name}? They disappear from the list; their runs stay in the data and in backups.`,
+    deleteYes: 'Yes, delete',
+    cancel: 'Cancel',
+    a4Heading: 'Tuning reference',
+    a4Label: 'A4 (Hz)',
+    a4Problem: (min, max, f) => `A4 must be between ${f.number(min)} and ${f.number(max)} Hz.`,
+    otherHeading: 'Other',
+    tryAbc: 'Try your own ABC',
+  },
+
+  help: {
+    label: (field) => `Help: ${field}`,
+    newPlayer:
+      'Each player has their own path, streaks and settings. After adding one, set the daily goal and tolerances in their own box.',
+    goal: "Minutes of actual playing per day that count for the goal streak. Pauses of 30 seconds or more don't count.",
+    greenCents: 'Notes within this many cents of the right pitch count as in tune and turn green.',
+    yellowCents:
+      'A little further off, the note turns yellow: it is accepted but worth fewer points. Beyond this, it must be played again.',
+    centsQuestion: 'What is a cent?',
+    cents: 'A cent is a hundredth of a semitone, so 50 cents is halfway to the next note. Smaller values are stricter.',
+    skipTuning: 'Hides the tuning screen shown before each exercise.',
+    a4: 'The pitch the app tunes to, normally 440 Hz. Change it only if your teacher or piano uses another one.',
+    backup:
+      'Export saves every player and all progress in a file. Import replaces the data in this browser with such a file, for example on a new device.',
+  },
+
+  backup: {
+    heading: 'Backup',
+    export: 'Export backup',
+    import: 'Import backup',
+    reminderLabel: 'Backup reminder',
+    lastBackupNever: 'Last backup: never',
+    lastBackupDaysAgo: (days, f) => `Last backup: ${count(days, 'day', 'days', f)} ago`,
+    reminderDismiss: 'Not now',
+    problems: {
+      notJson: 'This file cannot be read: it is not a backup, or it is damaged.',
+      notABackup: 'This file is not a Violin Trainer backup.',
+      newerVersion: 'This backup comes from a newer version of the app. Update the app, then import it.',
+    },
+    confirm: (profiles, attempts, f) =>
+      `This backup has ${count(profiles, 'player', 'players', f)} and ${count(attempts, 'run', 'runs', f)}. Importing it replaces all the data in this browser; a copy of the current data is downloaded first.`,
+    replace: 'Replace my data',
+    cancel: 'Cancel',
+    restored: 'Backup restored.',
+    failed: 'The backup could not be restored. Your data was not changed.',
+    exportFailed: 'The backup could not be saved. Try again.',
+  },
+
+  deleteAll: {
+    heading: 'Delete all data',
+    explain:
+      'Deletes every player, all progress, streaks, notes and settings saved in this browser. This cannot be undone: export a backup first if you may want them back.',
+    exportFirst: 'Export a backup first',
+    start: 'Delete all data…',
+    sure: 'Are you sure? Everything in this browser will be gone for good.',
+    word: 'DELETE',
+    typeWord: (word) => `Type ${word} to confirm`,
+    confirm: 'Delete everything',
+    cancel: 'Cancel',
+    failed: 'The data could not be deleted, and nothing was changed. Try again.',
+    blocked:
+      'The app is still open in another tab, so the data cannot be deleted yet. Close the app in the other tabs and try again; once they are closed, the deletion goes ahead.',
+  },
+
+  storage: {
+    notSaved: "This window can't save progress (private browsing?). Practice works, but nothing is kept after it closes.",
+    persistence: {
+      granted: 'This browser keeps the data.',
+      denied: 'This browser may clear the data: install the app or export backups often.',
+      unsupported: 'This browser may clear the data: export backups often.',
+    },
   },
 
   microphoneErrors: {
@@ -101,5 +282,15 @@ export const en: Messages = {
     'd-major-scale': 'D major scale, one octave',
     'repeated-notes': 'Repeated notes (lift or change the bow between notes)',
     twinkle: 'Twinkle, Twinkle, Little Star (traditional)',
+    'lightly-row': 'Lightly Row (traditional)',
+    'song-of-the-wind': 'Song of the Wind (traditional)',
+    'go-tell-aunt-rhody': 'Go Tell Aunt Rhody (traditional)',
+    'o-come-little-children': 'O Come, Little Children (traditional)',
+    'may-song': 'May Song (traditional)',
+    'long-long-ago': 'Long, Long Ago (traditional)',
+  },
+  unitTitles: {
+    'first-steps': 'First steps',
+    'traditional-tunes': 'Traditional tunes',
   },
 }

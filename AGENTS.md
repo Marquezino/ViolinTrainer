@@ -40,6 +40,8 @@ A browser app (Vite, React, TypeScript) that listens to a violin through the mic
 - `src/analysis`: pitch detection, level, high-pass filter and note tracking on those frames.
 - `src/practice`: the practice engine, wait-mode session and scoring.
 - `src/score`: ABC parsing into exercises. `src/music`: pitch math and fingering.
+- `src/store`: the Dexie (IndexedDB) database, records and backup export/import.
+- `src/progress`: pure progress rules: days, streaks, notes, unlocking, hints, leaderboard and celebrations.
 - `src/ui`: React screens and the hook that runs a practice session.
 - `src/exercises`: built-in sample exercises.
 

@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test'
+import { addProfile } from './helpers.ts'
 
 test('open strings through the fake microphone: colors, red marker, yellow, stars', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
-  await page.goto('/')
+  await addProfile(page, 'Player A')
   await page.getByRole('button', { name: 'Open strings' }).click()
   await expect(page.locator('.score svg')).toBeVisible()
   await expect(page.locator('.vt-hint').first()).toHaveText('G 0') // the preview already shows the first hint
@@ -33,7 +34,7 @@ test('warns when the browser keeps its audio processing on', async ({ page }) =>
       return { ...getSettings.call(this), autoGainControl: true }
     }
   })
-  await page.goto('/')
+  await addProfile(page, 'Player A')
   await page.getByRole('button', { name: 'Open strings' }).click()
   await page.getByRole('button', { name: 'Start' }).click()
   await expect(page.getByText('Play the highlighted note')).toBeVisible({ timeout: 10_000 })
@@ -66,11 +67,11 @@ test('leaving mid-exercise releases the microphone, and the next exercise can st
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await trackAudioResources(page)
-  await page.goto('/')
+  await addProfile(page, 'Player A')
   await page.getByRole('button', { name: 'Open strings' }).click()
   await page.getByRole('button', { name: 'Start' }).click()
   await expect(page.getByText('Stay quiet')).toBeVisible()
-  await page.getByRole('button', { name: '← Exercises' }).click()
+  await page.getByRole('button', { name: '← Path' }).click()
 
   const released = () =>
     page.evaluate(() => {
@@ -82,7 +83,8 @@ test('leaving mid-exercise releases the microphone, and the next exercise can st
     })
   await expect.poll(released).toEqual({ tracks: ['ended'], contexts: ['closed'] })
 
-  await page.getByRole('button', { name: 'D major scale, one octave' }).click()
+  // Nothing was played, so the next exercise is still locked: start the same one again.
+  await page.getByRole('button', { name: 'Open strings' }).click()
   await page.getByRole('button', { name: 'Start' }).click()
   await expect(page.getByText('Play the highlighted note')).toBeVisible({ timeout: 10_000 })
   expect(errors).toEqual([])
