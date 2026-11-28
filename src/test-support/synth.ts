@@ -100,3 +100,10 @@ export function mix(...parts: Float32Array[]): Float32Array {
   for (const p of parts) for (let i = 0; i < p.length; i++) out[i] += p[i]
   return out
 }
+
+/** A copy of `signal` with its level changed over time by `gainDb(ms)` (a bow's swells and fades). */
+export function withGain(signal: Float32Array, gainDb: (ms: number) => number, sampleRate = SAMPLE_RATE): Float32Array {
+  const out = new Float32Array(signal.length)
+  for (let i = 0; i < signal.length; i++) out[i] = signal[i] * 10 ** (gainDb((i / sampleRate) * 1000) / 20)
+  return out
+}

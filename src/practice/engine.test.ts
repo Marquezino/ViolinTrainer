@@ -14,6 +14,7 @@ import {
   rumble,
   silence,
   tone,
+  withGain,
 } from '../test-support/synth'
 import { PracticeEngine } from './engine'
 import { DEFAULT_HINT_DELAY_MS, startSession, type SessionConfig } from './wait-session'
@@ -69,6 +70,18 @@ describe('PracticeEngine with synthetic performances', () => {
     expect(s.phase).toBe('finished')
     expect(s.session.targets[1]).toMatchObject({ color: 'green', redAttempts: 1 })
     expect(s.result?.points).toBe(3)
+  })
+
+  test('holding an accepted note much longer, as its level fades and swells, is no attempt at the next note', () => {
+    const longBow = withGain(tone({ hz: midiToHz(69), ms: 4000, harmonics: VIOLIN_HARMONICS }), (t) =>
+      t < 2500 ? -10 * (t / 2500) : -10 + 6 * ((t - 2500) / 1500) + 1.5 * Math.sin((2 * Math.PI * 3 * t) / 1000),
+    )
+    const s = run(exercise('A B |]'), concat(longBow, silence(60), note(71)))
+    expect(s.phase).toBe('finished')
+    expect(s.session.targets.map((t) => [t.color, t.redAttempts])).toEqual([
+      ['green', 0],
+      ['green', 0],
+    ])
   })
 
   test('PRECISION: a wrong note never advances the cursor', () => {
