@@ -32,7 +32,12 @@ export interface TrackerConfig {
   minVoicedFraction: number
   /** Silence or dip duration that separates two notes of the same pitch. */
   reattackMs: number
+  /**
+   * A dip is this far below the loudest level of the preceding reattackRefMs, so it must be a quick
+   * drop (a bow change). Slow swells and fades within one long bow are not dips.
+   */
   reattackDipDb: number
+  reattackRefMs: number
 }
 
 export const DEFAULT_TRACKER_CONFIG: Omit<TrackerConfig, 'noiseFloorDb'> = {
@@ -48,6 +53,7 @@ export const DEFAULT_TRACKER_CONFIG: Omit<TrackerConfig, 'noiseFloorDb'> = {
   minVoicedFraction: 0.8,
   reattackMs: 30,
   reattackDipDb: 6,
+  reattackRefMs: 150,
 }
 
 export interface NoteEvent {
@@ -96,7 +102,10 @@ interface Candidate {
 /** A confirmed note that is still sounding. */
 interface Sounding {
   anchorHz: number
-  peakDb: number
+  /** Voiced levels of the last reattackRefMs before now (or before the current dip began). */
+  levels: { timeMs: number; db: number }[]
+  /** Level the current dip is measured against: frozen when the dip begins. */
+  dipRefDb: number | null
   dipSinceMs: number | null
   dipped: boolean
   /** Newest frames of the note, kept while re-judging. */
@@ -195,7 +204,8 @@ export class NoteTracker {
     this.candidate = null
     const sounding: Sounding = {
       anchorHz: settledHz,
-      peakDb: candidate.peakDb,
+      levels: [{ timeMs, db: candidate.peakDb }],
+      dipRefDb: null,
       dipSinceMs: null,
       dipped: false,
       recent: [],
@@ -250,19 +260,30 @@ export class NoteTracker {
 
   /** Tracks level dips within a sounding note; true when the level comes back after a long enough dip. */
   private detectReattack(s: Sounding, levelDb: number, timeMs: number, intervalMs: number): boolean {
-    if (levelDb < s.peakDb - this.config.reattackDipDb) {
+    const refDb = s.dipRefDb ?? this.recentLevelDb(s, timeMs)
+    if (levelDb < refDb - this.config.reattackDipDb) {
       this.markDip(s, timeMs, intervalMs)
       return false
     }
     const recovered = s.dipped
+    if (s.dipRefDb !== null) s.levels = []
+    s.dipRefDb = null
     s.dipSinceMs = null
     s.dipped = false
-    s.peakDb = Math.max(s.peakDb, levelDb)
+    s.levels.push({ timeMs, db: levelDb })
     return recovered
+  }
+
+  /** Loudest voiced level of the last reattackRefMs. */
+  private recentLevelDb(s: Sounding, timeMs: number): number {
+    const sinceMs = timeMs - this.config.reattackRefMs
+    s.levels = s.levels.filter((l) => l.timeMs >= sinceMs)
+    return s.levels.reduce((max, l) => Math.max(max, l.db), -Infinity)
   }
 
   /** Low or unvoiced frames inside a sounding note both count toward a dip. */
   private markDip(s: Sounding, timeMs: number, intervalMs: number): void {
+    s.dipRefDb ??= this.recentLevelDb(s, timeMs)
     s.dipSinceMs ??= timeMs - intervalMs
     if (timeMs - s.dipSinceMs >= this.config.reattackMs) s.dipped = true
   }

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { DEFAULT_TRACKER_CONFIG, NoteTracker, isVoiced, median, type NoteEvent, type TrackerConfig } from './note-tracker'
 import { analyzeSignal, trackNotes } from './offline'
 import { centsBetween, midiToHz } from '../music/pitch'
-import { SAMPLE_RATE, VIOLIN_HARMONICS, concat, noise, silence, tone } from '../test-support/synth'
+import { SAMPLE_RATE, VIOLIN_HARMONICS, concat, noise, silence, tone, withGain } from '../test-support/synth'
 
 const QUIET_ROOM: TrackerConfig = { ...DEFAULT_TRACKER_CONFIG, noiseFloorDb: -70 }
 const A4 = midiToHz(69)
@@ -75,6 +75,29 @@ describe('NoteTracker', () => {
 
   test('a held note without a dip stays one event', () => {
     expect(play(violin(A4, 800))).toHaveLength(1)
+  })
+
+  // A long bow fades and swells far below the attack's level; only a quick drop is a bow change.
+  test.each([
+    ['fades 10 dB, then swells 6 dB', (t: number) => (t < 2000 ? -10 * (t / 2000) : -10 + 6 * ((t - 2000) / 1000))],
+    ['fades 8 dB with a slow wobble', (t: number) => -8 * (t / 3000) + 2 * Math.sin((2 * Math.PI * 3 * t) / 1000)],
+    ['wobbles 6 dB at 2 Hz', (t: number) => 3 * Math.sin((2 * Math.PI * 2 * t) / 1000) - 3],
+  ])('a long held note that %s stays one event', (_name, gainDb) => {
+    const events = play(withGain(violin(A4, 3000), gainDb))
+    expect(events).toHaveLength(1)
+  })
+
+  test('a bow change that dips over 30 ms, after a long fade, still gives a new event', () => {
+    // Fades 8 dB over 2 s, then drops 12 dB more within 30 ms, stays down 40 ms and comes back.
+    const gainDb = (t: number) => {
+      const fade = -8 * Math.min(t, 2000) / 2000
+      if (t < 2000) return fade
+      if (t < 2030) return fade - 12 * ((t - 2000) / 30)
+      if (t < 2070) return fade - 12
+      if (t < 2100) return fade - 12 * (1 - (t - 2070) / 30)
+      return fade
+    }
+    expect(play(withGain(violin(A4, 2500), gainDb))).toHaveLength(2)
   })
 
   test('a short blip is ignored', () => {
